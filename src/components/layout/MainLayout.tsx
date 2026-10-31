@@ -30,6 +30,9 @@ import {
   IconSidebarRouting,
   IconSidebarStore,
   IconSidebarSystem,
+  IconSidebarUsage,
+  IconSidebarLive,
+  IconSidebarAccounts,
   IconChevronDown,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
@@ -62,6 +65,9 @@ const sidebarIcons: Record<string, ReactNode> = {
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
+  usage: <IconSidebarUsage size={18} />,
+  live: <IconSidebarLive size={18} />,
+  accounts: <IconSidebarAccounts size={18} />,
   routing: <IconSidebarRouting size={18} />,
   plugins: <IconSidebarPlugins size={18} />,
   pluginStore: <IconSidebarStore size={18} />,
@@ -650,6 +656,24 @@ export function MainLayout() {
       id: 'observe',
       labelKey: 'nav_groups.observe',
       items: [
+        {
+          path: '/usage',
+          labelKey: 'nav.usage',
+          metaKey: 'nav_meta.usage',
+          icon: sidebarIcons.usage,
+        },
+        {
+          path: '/live',
+          labelKey: 'nav.live',
+          metaKey: 'nav_meta.live',
+          icon: sidebarIcons.live,
+        },
+        {
+          path: '/accounts',
+          labelKey: 'nav.accounts',
+          metaKey: 'nav_meta.accounts',
+          icon: sidebarIcons.accounts,
+        },
         {
           path: '/quota',
           labelKey: 'nav.quota_management',
