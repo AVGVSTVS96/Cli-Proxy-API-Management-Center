@@ -85,6 +85,16 @@
   --viz-success: #10b981;
   --viz-failure: #c65746;
 
+  // Categorical series for agent charts (Usage): seven named slots and the rest.
+  --series-0: #2a78d6;
+  --series-1: #eb6834;
+  --series-2: #1baf7a;
+  --series-3: #eda100;
+  --series-4: #e87ba4;
+  --series-5: #008300;
+  --series-6: #6250d6;
+  --series-7: #a3ab9f;
+
   // 动效词汇表：内置 ease 太弱，交互反馈统一用强减速曲线。
   // 按压 160ms / 悬停 200ms，UI 动效不超过 300ms。
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
@@ -250,6 +260,15 @@
   // 因此深色单独降一档。三套主题均已通过对比度/色盲/亮度校验。
   --viz-success: #0fae78;
   --viz-failure: #cf4b3a;
+
+  --series-0: #3987e5;
+  --series-1: #d95926;
+  --series-2: #199e70;
+  --series-3: #c98500;
+  --series-4: #d55181;
+  --series-5: #008300;
+  --series-6: #9085e9;
+  --series-7: #5d665a;
 
   --plan-accent-text: var(--suite-champagne);
 }
