@@ -86,8 +86,6 @@ export type UsageView = {
   };
   facets: Record<Dimension, { id: string; label: string; count: number }[]>;
   sources: {
-    trackerAt: number | null;
-    trackerError: string | null;
     devices: { id: string; label: string; syncedAt: number | null }[];
   };
 };

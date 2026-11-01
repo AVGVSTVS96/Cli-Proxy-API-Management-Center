@@ -233,12 +233,6 @@ export function UsagePage() {
 
       {usage.error && <Alert>{usage.error}. Showing the last answer.</Alert>}
 
-      {view.sources.trackerError && (
-        <Alert>
-          token-tracker didn't answer: {view.sources.trackerError}. These numbers are from its last
-          good read.
-        </Alert>
-      )}
 
       <AccountFilters selected={state.where.find(([d]) => d === 'account')?.[1] ?? []} />
       <Summary totals={view.totals} previous={view.previous} />
@@ -961,7 +955,6 @@ function Footer({ view }: { view: UsageView }) {
       <span>
         Limit readings since {coverage.limitsSince ? when(coverage.limitsSince) : 'never'}
       </span>
-      <span>token-tracker read {sources.trackerAt ? when(sources.trackerAt) : 'never'}</span>
       {sources.devices.map((d) => (
         <span key={d.id}>
           {d.label} synced {d.syncedAt ? when(d.syncedAt) : 'never'}
