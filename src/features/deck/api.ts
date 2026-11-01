@@ -1,15 +1,26 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '@/stores';
+import { computeApiUrl } from '@/utils/connection';
 import type { Account, LiveSession, LiveState, LiveValue, Pool, ServerEvent } from './types';
 
-/** deck's server, which feeds Usage, Live and Accounts. Set `deck-url` in localStorage to point elsewhere. */
-export const DECK_URL = (
-  localStorage.getItem('deck-url') || `http://${window.location.hostname}:4810`
-).replace(/\/$/, '');
+/** The proxy's own management API serves Usage, Live and Accounts, with the key the dashboard signed in with. */
+function request(path: string, init: RequestInit = {}) {
+  const { apiBase, managementKey } = useAuthStore.getState();
+
+  return fetch(`${computeApiUrl(apiBase)}/deck${path}`, {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${managementKey}` },
+  }).then((response) => {
+    if (response.status === 401) window.dispatchEvent(new Event('unauthorized'));
+
+    return response;
+  });
+}
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${DECK_URL}/api${path}`, init).catch(() => {
-    throw new Error(`deck at ${DECK_URL} didn't answer`);
+  const response = await request(path, init).catch(() => {
+    throw new Error("The proxy didn't answer");
   });
   const body = await response.json().catch(() => ({}));
 
@@ -85,7 +96,7 @@ function invalidate(match: (tags: string[]) => boolean) {
 }
 
 /**
- * A cached GET of deck's API, keyed by its path. It stays fresh until deck names one of its tags
+ * A cached GET of the deck views, keyed by its path. It stays fresh until the stream names one of its tags
  * in a `stale` event; a null path reads nothing.
  */
 export function useDeck<T>(path: string | null, ...tags: string[]) {
@@ -130,7 +141,7 @@ const liveListeners = new Set<() => void>();
 const lists = new Map<string, { from: Record<string, LiveValue>; list: [string, LiveValue][] }>();
 
 const subscribe = (listener: () => void) => {
-  if (!source && !document.hidden) connect();
+  if (!stream && !document.hidden) void connect();
   liveListeners.add(listener);
 
   return () => liveListeners.delete(listener);
@@ -160,23 +171,61 @@ function apply(event: ServerEvent) {
   publish();
 }
 
-let source: EventSource | null = null;
+let stream: AbortController | null = null;
 let opened = false;
 
-function connect() {
-  source = new EventSource(`${DECK_URL}/api/events`);
-  source.addEventListener('open', () => {
+/**
+ * Reads the live stream with fetch, since EventSource can't send the management key. Like
+ * EventSource, a stream that ends or fails connects again; each new connection takes a fresh
+ * snapshot and refetches.
+ */
+async function connect() {
+  const own = new AbortController();
+
+  stream = own;
+
+  try {
+    const response = await request('/events', { signal: own.signal });
+
+    if (!response.ok || !response.body) throw new Error(`stream answered ${response.status}`);
+
     if (opened) invalidate(() => true);
 
     opened = true;
     connected = true;
     publish();
-  });
-  source.addEventListener('error', () => {
-    connected = false;
-    publish();
-  });
-  source.addEventListener('message', (message) => apply(JSON.parse(message.data)));
+
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buffer = '';
+
+    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+      buffer += chunk.value;
+
+      for (let end = buffer.indexOf('\n\n'); end >= 0; end = buffer.indexOf('\n\n')) {
+        const data = buffer
+          .slice(0, end)
+          .split('\n')
+          .filter((line) => line.startsWith('data: '))
+          .map((line) => line.slice(6))
+          .join('\n');
+
+        buffer = buffer.slice(end + 2);
+
+        if (data) apply(JSON.parse(data));
+      }
+    }
+  } catch {
+    if (own.signal.aborted) return;
+  }
+
+  connected = false;
+  publish();
+
+  if (stream !== own) return;
+  stream = null;
+  setTimeout(() => {
+    if (!stream && !document.hidden && liveListeners.size) void connect();
+  }, 3000);
 }
 
 /**
@@ -186,11 +235,11 @@ function connect() {
  */
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    source?.close();
-    source = null;
+    stream?.abort();
+    stream = null;
     connected = false;
     publish();
-  } else if (!source && liveListeners.size) connect();
+  } else if (!stream && liveListeners.size) void connect();
 });
 
 export function useLive<K extends string>(key: K): LiveOf<K> | undefined {

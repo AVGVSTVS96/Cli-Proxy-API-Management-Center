@@ -1,4 +1,4 @@
-/** The shapes deck's server sends, copied from deck's src/contract.ts; keep the two in step. */
+/** The shapes the proxy's deck views send (internal/usage/deck in the proxy); keep the two in step. */
 
 export type Range = 'today' | 'yesterday' | '7d' | '30d' | '6m';
 
