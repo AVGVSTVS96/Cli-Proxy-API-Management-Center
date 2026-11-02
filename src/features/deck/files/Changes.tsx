@@ -51,7 +51,7 @@ export function Changes({ ws, repo }: { ws: Workspace; repo: RepoSummary }) {
   if (changes.error) return <Empty>{changes.error}</Empty>;
 
   return (
-    <div className="bench-grid changes" data-open="main">
+    <div className="bench-grid review" data-open="main">
       <aside className="bench-side">
         <PathTree key={ws.id} paths={paths} status={status} selected={focused} onPick={pick} open />
       </aside>

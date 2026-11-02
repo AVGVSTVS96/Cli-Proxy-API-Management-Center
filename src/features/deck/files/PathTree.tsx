@@ -3,6 +3,9 @@ import type { GitStatusEntry } from '@pierre/trees';
 import { FileTree, useFileTree } from '@pierre/trees/react';
 import { Empty } from '../components';
 
+/** Past this many files a change set starts folded, so a few hundred untracked logs stay one click away. */
+const OPEN_LIMIT = 300;
+
 const ancestors = (path: string) => {
   const parts = path.split('/').slice(0, -1);
 
@@ -29,26 +32,28 @@ export function PathTree({
 }) {
   const known = useRef<Set<string> | null>(null);
   const pick = useRef(onPick);
+  const current = useRef(selected);
   const startOpen = useEffectEvent((paths: string[]) =>
-    open ? [...new Set(paths.flatMap(ancestors))] : ancestors(selected)
+    open && paths.length <= OPEN_LIMIT ? [...new Set(paths.flatMap(ancestors))] : ancestors(selected)
   );
 
   const { model } = useFileTree({
     paths: [],
     flattenEmptyDirectories: true,
-    initialExpansion: open ? 'open' : 'closed',
+    initialExpansion: 'closed',
     search: true,
     density: 'compact',
     onSelectionChange: (picked) => {
       const path = picked[0];
 
-      if (path && known.current?.has(path)) pick.current(path);
+      if (path && path !== current.current && known.current?.has(path)) pick.current(path);
     },
   });
 
   useEffect(() => {
     pick.current = onPick;
-  }, [onPick]);
+    current.current = selected;
+  }, [onPick, selected]);
 
   useEffect(() => {
     if (!paths) return;
