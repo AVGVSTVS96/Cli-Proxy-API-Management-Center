@@ -33,6 +33,9 @@ import {
   IconSidebarUsage,
   IconSidebarLive,
   IconSidebarAccounts,
+  IconSidebarFiles,
+  IconSidebarClaudePlugins,
+  IconSidebarExecutor,
   IconChevronDown,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
@@ -68,6 +71,9 @@ const sidebarIcons: Record<string, ReactNode> = {
   usage: <IconSidebarUsage size={18} />,
   live: <IconSidebarLive size={18} />,
   accounts: <IconSidebarAccounts size={18} />,
+  files: <IconSidebarFiles size={18} />,
+  claudePlugins: <IconSidebarClaudePlugins size={18} />,
+  executor: <IconSidebarExecutor size={18} />,
   routing: <IconSidebarRouting size={18} />,
   plugins: <IconSidebarPlugins size={18} />,
   pluginStore: <IconSidebarStore size={18} />,
@@ -685,6 +691,30 @@ export function MainLayout() {
           labelKey: 'nav.logs',
           metaKey: 'nav_meta.logs',
           icon: sidebarIcons.logs,
+        },
+      ],
+    },
+    {
+      id: 'workspace',
+      labelKey: 'nav_groups.workspace',
+      items: [
+        {
+          path: '/files',
+          labelKey: 'nav.files',
+          metaKey: 'nav_meta.files',
+          icon: sidebarIcons.files,
+        },
+        {
+          path: '/claude-plugins',
+          labelKey: 'nav.claude_plugins',
+          metaKey: 'nav_meta.claude_plugins',
+          icon: sidebarIcons.claudePlugins,
+        },
+        {
+          path: '/executor',
+          labelKey: 'nav.executor',
+          metaKey: 'nav_meta.executor',
+          icon: sidebarIcons.executor,
         },
       ],
     },

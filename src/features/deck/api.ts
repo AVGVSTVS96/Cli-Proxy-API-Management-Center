@@ -31,12 +31,16 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
-export const send = <T>(path: string, method: string, body: Record<string, Json>) =>
-  api<T>(path, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+export const send = <T>(path: string, method: string, body?: Record<string, Json>) =>
+  api<T>(
+    path,
+    body
+      ? { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
+      : { method }
+  );
+
+export const putText = (path: string, text: string) =>
+  api<{ ok: true }>(path, { method: 'PUT', headers: { 'content-type': 'text/plain' }, body: text });
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 

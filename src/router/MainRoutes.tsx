@@ -16,6 +16,9 @@ import { SystemPage } from '@/pages/SystemPage';
 import { UsagePage } from '@/features/deck/UsagePage';
 import { LivePage } from '@/features/deck/LivePage';
 import { AccountsPage } from '@/features/deck/AccountsPage';
+import { FilesPage } from '@/features/deck/FilesPage';
+import { ClaudePluginsPage } from '@/features/deck/ClaudePluginsPage';
+import { ExecutorPage } from '@/features/deck/ExecutorPage';
 import { useAuthStore } from '@/stores';
 
 const createMainRoutes = (supportsPlugin: boolean) => [
@@ -36,6 +39,10 @@ const createMainRoutes = (supportsPlugin: boolean) => [
   { path: '/usage', element: <UsagePage /> },
   { path: '/live', element: <LivePage /> },
   { path: '/accounts', element: <AccountsPage /> },
+  { path: '/files/*', element: <FilesPage /> },
+  { path: '/claude-plugins', element: <ClaudePluginsPage /> },
+  { path: '/executor', element: <ExecutorPage /> },
+  { path: '/executor/:slug', element: <ExecutorPage /> },
   ...(supportsPlugin
     ? [
         { path: '/plugin-pages/:pluginId/:menuIndex', element: <PluginResourcePage /> },

@@ -1,0 +1,28 @@
+// The shiki grammars the dashboard bundles. vite.config.ts points shiki/langs here, since the
+// single-file build would otherwise inline all of them.
+export const bundledLanguages = {
+  typescript: () => import('@shikijs/langs/typescript'),
+  tsx: () => import('@shikijs/langs/tsx'),
+  javascript: () => import('@shikijs/langs/javascript'),
+  json: () => import('@shikijs/langs/json'),
+  jsonc: () => import('@shikijs/langs/jsonc'),
+  jsonl: () => import('@shikijs/langs/jsonl'),
+  markdown: () => import('@shikijs/langs/markdown'),
+  yaml: () => import('@shikijs/langs/yaml'),
+  toml: () => import('@shikijs/langs/toml'),
+  go: () => import('@shikijs/langs/go'),
+  zsh: () => import('@shikijs/langs/zsh'),
+  shellscript: () => import('@shikijs/langs/shellscript'),
+  fish: () => import('@shikijs/langs/fish'),
+  css: () => import('@shikijs/langs/css'),
+  scss: () => import('@shikijs/langs/scss'),
+  html: () => import('@shikijs/langs/html'),
+  python: () => import('@shikijs/langs/python'),
+  diff: () => import('@shikijs/langs/diff'),
+  dockerfile: () => import('@shikijs/langs/dockerfile'),
+  ini: () => import('@shikijs/langs/ini'),
+  xml: () => import('@shikijs/langs/xml'),
+  lua: () => import('@shikijs/langs/lua'),
+  make: () => import('@shikijs/langs/make'),
+  systemd: () => import('@shikijs/langs/systemd'),
+};

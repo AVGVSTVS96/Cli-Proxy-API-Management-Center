@@ -69,3 +69,7 @@ export function Alert({ children }: { children: ReactNode }) {
     </p>
   );
 }
+
+export function Empty({ children }: { children: ReactNode }) {
+  return <div className="empty">{children}</div>;
+}

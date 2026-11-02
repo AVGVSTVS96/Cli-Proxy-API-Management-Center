@@ -172,3 +172,88 @@ export type ServerEvent =
   | { type: 'snapshot'; live: Record<string, LiveValue> }
   | { type: 'patch'; live: Record<string, LiveValue | null> }
   | { type: 'stale'; tags: string[] };
+
+/** Files, Plugins and Executor: the proxy's workspace views (internal/workspace in the proxy). */
+
+export type Workspace = {
+  /** The repo id for its live checkout, `<repo>~<name>` for a worktree. */
+  id: string;
+  repo: string;
+  /** Null for the live checkout. */
+  name: string | null;
+  path: string;
+  branch: string | null;
+  base: string | null;
+};
+
+export type RepoSummary = {
+  id: string;
+  name: string;
+  about: string;
+  path: string;
+  review: boolean;
+  branch: string | null;
+  unpushed: number | null;
+  /** The live checkout first, then its worktrees. */
+  workspaces: Workspace[];
+};
+
+export type ChangeStatus = 'added' | 'deleted' | 'modified' | 'untracked';
+
+export type Change = { path: string; status: ChangeStatus; added: number; removed: number };
+
+export type Changes = { files: Change[]; dirty: boolean; ahead: number; behind: number };
+
+export type WorkspaceDiff = { patch: string; omitted: string[] };
+
+export type FileBody = {
+  path: string;
+  contents: string | null;
+  original: string | null;
+  binary: boolean;
+  tooLarge: boolean;
+};
+
+export type Commit = {
+  sha: string;
+  short: string;
+  subject: string;
+  author: string;
+  at: number;
+  signed: boolean;
+};
+
+export type CommitDetail = Commit & { body: string; patch: string; truncated?: boolean };
+
+export type Draft = { name: string; target: { repo: string; path: string } | null };
+
+export type Plugin = {
+  id: string;
+  name: string;
+  kind: 'channel' | 'mod' | 'claude';
+  version: string | null;
+  description: string;
+  enabled: boolean | null;
+  scope: string | null;
+  source: { repo: string; path: string } | null;
+  state: string | null;
+};
+
+export type ExecutorApp = {
+  id: string;
+  slug: string;
+  name: string;
+  activeVersion: string | null;
+  deployedAt: string | null;
+  versions: number;
+  local: boolean;
+  pinned: string | null;
+  requirements: string[];
+  accounts: { requirement: string; label: string; health: string | null }[];
+};
+
+export type ExecutorOverview = { framework: string | null; apps: ExecutorApp[]; console: string };
+
+export type ExecutorSource = {
+  files: { path: string; deployed: string | null; local: string | null }[];
+};

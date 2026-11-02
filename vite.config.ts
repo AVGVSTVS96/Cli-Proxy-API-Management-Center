@@ -47,9 +47,12 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(getVersion())
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+    alias: [
+      { find: /^shiki\/langs$/, replacement: path.resolve(__dirname, './src/features/deck/code/shikiLangs.ts') },
+      { find: /^@pierre\/theming\/themes$/, replacement: path.resolve(__dirname, './src/features/deck/code/pierreThemes.ts') },
+      { find: /^(shiki\/wasm|@pierre\/highlights(\/.*)?)$/, replacement: path.resolve(__dirname, './src/features/deck/code/unusedBackends.ts') },
+      { find: '@', replacement: path.resolve(__dirname, './src') }
+    ]
   },
   css: {
     modules: {
