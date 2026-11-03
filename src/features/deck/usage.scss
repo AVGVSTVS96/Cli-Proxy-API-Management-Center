@@ -1,0 +1,609 @@
+// Usage: filters, the overview (headline, activity and limits now), then the ranking.
+
+.deck.usage {
+  // Filters.
+
+  .filters {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: -8px;
+  }
+
+  .facet {
+    position: relative;
+
+    &[open] .facet-button {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+  }
+
+  .facet-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--deck-surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      color var(--dur-hover) var(--ease-out-strong),
+      border-color var(--dur-hover) var(--ease-out-strong);
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    > [aria-hidden] {
+      color: var(--text-tertiary);
+      font-size: 10px;
+    }
+  }
+
+  .count {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--deck-accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .facet-menu {
+    position: absolute;
+    z-index: 10;
+    top: calc(100% + 6px);
+    left: 0;
+    display: grid;
+    gap: 2px;
+    width: min(300px, calc(100vw - 32px));
+    max-height: 340px;
+    overflow: auto;
+    padding: 6px;
+
+    .input {
+      margin-bottom: 4px;
+      padding: 6px 10px;
+    }
+  }
+
+  .facet-option {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--bg-tertiary);
+    }
+
+    input {
+      accent-color: var(--deck-accent);
+    }
+  }
+
+  .filters > .chip {
+    border-color: color-mix(in srgb, var(--deck-accent) 35%, transparent);
+    background: var(--deck-accent-soft);
+  }
+
+  // The overview: the range's headline and its activity, with each account's week beside them.
+
+  .overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .overview-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    min-width: 0;
+    padding: 20px 20px 16px;
+  }
+
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px 32px;
+  }
+
+  .headline {
+    display: grid;
+    gap: 2px;
+
+    .figure {
+      font-family: inherit;
+      font-size: 36px;
+      line-height: 44px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+    }
+  }
+
+  .delta {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .figures-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    margin: 0;
+
+    dt {
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    dd {
+      margin: 2px 0 0;
+      font-size: 17px;
+      line-height: 22px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .limits-now {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 16px;
+    border-left: 1px solid var(--border-color);
+  }
+
+  .limits-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 8px 4px;
+
+    h2 {
+      font-size: 13px;
+      line-height: 20px;
+      font-weight: 600;
+    }
+
+    a {
+      color: var(--text-secondary);
+      font-size: 12px;
+      text-decoration: none;
+
+      &:hover {
+        color: var(--deck-accent);
+      }
+    }
+  }
+
+  .limit-pick {
+    display: grid;
+    gap: 8px;
+    padding: 10px 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--dur-hover) var(--ease-out-strong);
+
+    &:hover {
+      background: var(--bg-tertiary);
+    }
+
+    &[aria-pressed='true'] {
+      border-color: color-mix(in srgb, var(--deck-accent) 40%, transparent);
+      background: var(--deck-accent-soft);
+    }
+
+    .meter-foot {
+      font-size: 11px;
+    }
+  }
+
+  .limit-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+
+    b {
+      font-weight: 600;
+    }
+  }
+
+  // The ranking.
+
+  .ranking {
+    container: ranking / inline-size;
+  }
+
+  .ranking > .section-head {
+    padding: 10px 12px;
+  }
+
+  .search {
+    width: min(240px, 100%);
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .table-wrap {
+    max-height: min(78vh, 1040px);
+    overflow: auto;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .rank {
+    th {
+      background: var(--deck-surface);
+      box-shadow: inset 0 -1px 0 var(--border-color);
+      color: var(--text-tertiary);
+      font-weight: 500;
+
+      &[aria-sort] {
+        color: var(--text-primary);
+      }
+    }
+
+    td {
+      padding: 9px 12px;
+    }
+
+    tbody tr:first-child td {
+      border-top: 0;
+    }
+
+    td.n {
+      color: var(--text-secondary);
+
+      &.zero {
+        color: var(--text-quaternary);
+      }
+
+      &.on {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+    }
+
+    tbody tr[data-row][aria-selected='true'] {
+      background: var(--deck-accent-soft);
+      box-shadow: inset 2px 0 0 var(--deck-accent);
+    }
+
+    .idx {
+      width: 1%;
+      padding-right: 0;
+      color: var(--text-quaternary);
+      font-size: 11px;
+    }
+
+    .name {
+      min-width: 220px;
+
+      > .small {
+        display: block;
+        margin-left: 18px;
+      }
+    }
+
+    td.share,
+    th.share {
+      width: 1%;
+    }
+
+    .accts {
+      display: none;
+    }
+
+    .spark {
+      display: none;
+    }
+
+    .bar {
+      width: 64px;
+      height: 6px;
+    }
+  }
+
+  td.share {
+    white-space: nowrap;
+
+    > * {
+      vertical-align: middle;
+    }
+  }
+
+  .share-value {
+    display: inline-block;
+    min-width: 72px;
+    margin-right: 12px;
+  }
+
+  .table-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .ranking > .detail {
+    margin: 0 12px 12px;
+  }
+
+  .detail {
+    .section-head {
+      align-items: flex-start;
+    }
+
+    .pad {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+  }
+
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+    gap: 12px;
+
+    > div {
+      display: grid;
+    }
+
+    .figure {
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 650;
+    }
+  }
+
+  .by-account {
+    td,
+    th {
+      padding: 6px 8px;
+    }
+
+    th {
+      background: none;
+      box-shadow: inset 0 -1px 0 var(--border-color);
+    }
+
+    td:first-child {
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .drill h3 {
+    margin-bottom: 4px;
+  }
+
+  .sessions {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
+      gap: 12px;
+      padding: 6px 0;
+      border-top: 1px solid var(--border-color);
+    }
+
+    li.more {
+      display: block;
+    }
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    margin-top: -8px;
+  }
+
+  // Widths, measured on the page and on the ranking rather than the window.
+
+  @container deck (max-width: 999px) {
+    .overview {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .limits-now {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      border-top: 1px solid var(--border-color);
+      border-left: 0;
+
+      .limits-head {
+        grid-column: 1 / -1;
+      }
+    }
+  }
+
+  @container deck (max-width: 679px) {
+    .head .seg {
+      flex-wrap: nowrap;
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .overview-main {
+      padding: 16px;
+    }
+
+    .headline .figure {
+      font-size: 30px;
+      line-height: 36px;
+    }
+
+    .figures-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .facet {
+      position: static;
+    }
+
+    .facet-menu {
+      right: 0;
+      width: auto;
+    }
+
+    .by-account .share {
+      display: none;
+    }
+  }
+
+  @container ranking (min-width: 1150px) {
+    .rank {
+      .accts {
+        display: table-cell;
+        max-width: 22ch;
+      }
+
+      .spark {
+        display: inline-block;
+        width: 160px;
+      }
+
+      .bar {
+        width: 120px;
+      }
+    }
+  }
+
+  @container ranking (max-width: 999px) {
+    .rank .last,
+    .rank .idx {
+      display: none;
+    }
+  }
+
+  @container ranking (max-width: 619px) {
+    .search {
+      order: 9;
+      width: 100%;
+    }
+
+    .sort {
+      order: 8;
+    }
+
+    .table-wrap {
+      max-height: none;
+    }
+
+    .rank thead {
+      display: none;
+    }
+
+    .rank,
+    .rank tbody {
+      display: block;
+    }
+
+    .rank tr {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px 12px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .rank tbody tr:first-child {
+      border-top: 0;
+    }
+
+    .rank td {
+      display: block;
+      padding: 0;
+      border: 0;
+    }
+
+    .rank td.share {
+      display: grid;
+      width: auto;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
+    }
+
+    .rank td.name,
+    .rank td.share {
+      grid-column: 1 / -1;
+      min-width: 0;
+    }
+
+    .rank td.share .bar {
+      width: 100%;
+      margin: 0;
+    }
+
+    .rank td.n {
+      text-align: left;
+    }
+
+    .rank td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      color: var(--text-tertiary);
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 14px;
+    }
+
+    .rank td.n.last {
+      display: block;
+    }
+
+    .ranking:not(.open) .rank tbody tr:nth-child(n + 11),
+    .ranking:not(.open) .table-foot .btn,
+    .ranking.open .phone-more {
+      display: none;
+    }
+
+    .phone-more {
+      display: flex;
+      width: calc(100% - 32px);
+      margin: 8px 16px 16px;
+    }
+  }
+}

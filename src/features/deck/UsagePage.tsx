@@ -8,7 +8,7 @@ import { useNotificationStore } from '@/stores';
 import { LIVE_ORDER, api, useAccounts, useDeck, useLiveList, useParams } from './api';
 import { Columns, Spark } from './chart';
 import { Alert, Meter, SdkMark, Seg } from './components';
-import { STANDING, fmt, when } from './format';
+import { STANDING, fmt, shortAccount, when } from './format';
 import type {
   AgentSdkUsage,
   Bucket,
@@ -22,6 +22,7 @@ import type {
   UsageView,
 } from './types';
 import './deck.scss';
+import './usage.scss';
 
 const RANGES = [
   ['today', 'Today'],
@@ -49,22 +50,22 @@ type Measured = Pick<UsageRow, 'amount' | 'points'>;
 const MEASURES = [
   ['tokens', 'Tokens', (r: Measured) => r.amount.tokens, fmt.tokens, fmt.axis, 'Tokens'],
   ['api', 'API value', (r: Measured) => r.amount.apiUsd, fmt.usd, usdAxis, 'API $'],
-  ['plan', 'Allocated plan fee', (r: Measured) => r.amount.planUsd, fmt.usd, usdAxis, 'Fee $'],
+  ['plan', 'Plan fee share', (r: Measured) => r.amount.planUsd, fmt.usd, usdAxis, 'Plan $'],
   [
     'fiveHour',
-    '5-hour use (estimated)',
+    '5-hour limit used',
     (r: Measured) => r.points.fiveHour ?? 0,
-    fmt.pts,
-    fmt.pts,
-    '5h pts',
+    fmt.limit,
+    fmt.limit,
+    '5-hour',
   ],
   [
     'week',
-    'Weekly use (estimated)',
+    'Weekly limit used',
     (r: Measured) => r.points.week ?? 0,
-    fmt.pts,
-    fmt.pts,
-    'Week pts',
+    fmt.limit,
+    fmt.limit,
+    'Week',
   ],
 ] as const satisfies readonly (readonly [
   Measure,
@@ -209,7 +210,6 @@ export function UsagePage() {
   const chosen = onPage ?? offPage.data?.rows.find((r) => r.key === selected) ?? null;
   const { by, measure } = view.query;
   const m = MEASURES.find(([key]) => key === measure) ?? MEASURES[1];
-  const devices = view.sources.devices;
 
   return (
     <div className={usage.data ? 'deck usage' : 'deck usage dim'}>
@@ -217,8 +217,7 @@ export function UsagePage() {
         <div>
           <h1>Usage</h1>
           <p className="lede">
-            {period(view)} · {view.period.timezone} ·{' '}
-            {devices.length === 1 ? devices[0].label : `${devices.length} devices`}
+            {period(view)} · {view.period.timezone}
           </p>
         </div>
         <Seg
@@ -227,7 +226,7 @@ export function UsagePage() {
           options={RANGES}
           onChange={(v) => setParams({ range: v, sel: null })}
         />
-        <Button variant="secondary" size="sm" onClick={() => void exportCsv(state, view)}>
+        <Button variant="ghost" size="sm" onClick={() => void exportCsv(state, view)}>
           Export CSV
         </Button>
       </header>
@@ -236,104 +235,95 @@ export function UsagePage() {
 
       {usage.error && <Alert>{usage.error}. Showing the last answer.</Alert>}
 
-
-      <AccountFilters selected={state.where.find(([d]) => d === 'account')?.[1] ?? []} />
-      <Summary totals={view.totals} previous={view.previous} agentSdk={view.agentSdk} />
-      <Coverage view={view} />
-
-      <div className="split">
-        <div className="main-col">
-          <section
-            className={phoneAll ? 'section ranking open' : 'section ranking'}
-            aria-labelledby="ranking-title"
-          >
-            <div className="section-head">
-              <h2 id="ranking-title">
-                Usage by{' '}
-                {GROUPS.find(([g]) => g === by)![1]
-                  .toLowerCase()
-                  .replace(/s$/, '')}
-              </h2>
-              <Seg
-                label="Group by"
-                value={by}
-                options={GROUPS}
-                onChange={(v) => setParams({ by: v, sel: null, all: null })}
-              />
-              <span className="spacer" />
-              <Search value={state.q} />
-              <div className="sort">
-                <span className="muted small">Rank by</span>
-                <Select
-                  size="sm"
-                  fullWidth={false}
-                  ariaLabel="Rank by"
-                  value={state.measure}
-                  options={MEASURES.map(([value, label]) => ({ value, label: `${label} ↓` }))}
-                  onChange={(value) => setParams({ measure: value })}
-                />
-              </div>
-            </div>
-            {selected && !chosen && (state.by !== 'agent' || offPage.data) ? (
-              <p className="pad muted" aria-live="polite">
-                This row has no usage in this range.{' '}
-                <Button variant="ghost" size="sm" onClick={() => setParams({ sel: null })}>
-                  Close detail
-                </Button>
-              </p>
-            ) : chosen ? (
-              <Detail row={chosen} state={state} />
-            ) : null}
-            <Ranking
-              view={view}
-              measure={m}
-              selected={selected}
-              onPhoneAll={() => setPhoneAll(true)}
+      <section className="section overview" aria-labelledby="overview-title">
+        <div className="overview-main">
+          <Summary
+            totals={view.totals}
+            previous={view.previous}
+            agentSdk={view.agentSdk}
+            range={range}
+          />
+          <div className="activity">
+            <h2 id="overview-title" className="sr">
+              Activity
+            </h2>
+            <Columns
+              labels={view.buckets.map(tickOf)}
+              titles={view.buckets.map(titleOf)}
+              series={view.series}
+              format={m[3]}
+              axis={m[4]}
+              height={208}
+              caption={`${m[1]} per ${bucketWord(view.buckets[0])} for the top seven ${by}s`}
             />
-            <div className="table-foot muted small">
-              <span>
-                {fmt.int(view.rowCount)} {view.rowCount === 1 ? 'group' : 'groups'} ·{' '}
-                {fmt.int(view.totals.sessions)} sessions
-                {view.coverage.totalApiUsd > 0 &&
-                  ` · named ${fmt.pct(view.coverage.namedApiUsd / view.coverage.totalApiUsd)} of API value`}
-              </span>
-              {view.rowCount > view.rows.length && (
-                <Button variant="secondary" size="sm" onClick={() => setParams({ all: '1' })}>
-                  Show all {fmt.int(view.rowCount)}
-                </Button>
-              )}
-              {state.all && view.rowCount > PAGE && (
-                <Button variant="secondary" size="sm" onClick={() => setParams({ all: null })}>
-                  Show top {PAGE}
-                </Button>
-              )}
-            </div>
-          </section>
-
-          <section className="section activity" aria-labelledby="activity-title">
-            <div className="section-head">
-              <h2 id="activity-title">Activity</h2>
-              <span className="sub">
-                {m[1]} per {bucketWord(view.buckets[0])}, top seven and the rest
-              </span>
-            </div>
-            <div className="pad">
-              <Columns
-                labels={view.buckets.map(tickOf)}
-                titles={view.buckets.map(titleOf)}
-                series={view.series}
-                format={m[3]}
-                axis={m[4]}
-                caption={`${m[1]} per ${bucketWord(view.buckets[0])} for the top seven ${by}s`}
-              />
-            </div>
-          </section>
+          </div>
         </div>
+        <LimitsNow selected={state.where.find(([d]) => d === 'account')?.[1] ?? []} />
+      </section>
 
-        <aside className="side">
-          <Limits />
-        </aside>
-      </div>
+      <section
+        className={phoneAll ? 'section ranking open' : 'section ranking'}
+        aria-labelledby="ranking-title"
+      >
+        <div className="section-head">
+          <h2 id="ranking-title" className="sr">
+            Usage by {GROUPS.find(([g]) => g === by)![1].toLowerCase()}
+          </h2>
+          <Seg
+            label="Group by"
+            value={by}
+            options={GROUPS}
+            onChange={(v) => setParams({ by: v, sel: null, all: null })}
+          />
+          <span className="spacer" />
+          <Search value={state.q} />
+          <div className="sort">
+            <Select
+              size="sm"
+              fullWidth={false}
+              ariaLabel="Rank by"
+              value={state.measure}
+              options={MEASURES.map(([value, label]) => ({
+                value,
+                label: `Rank by ${label.replace(/^[A-Z][a-z]/, (c) => c.toLowerCase())}`,
+              }))}
+              onChange={(value) => setParams({ measure: value })}
+            />
+          </div>
+        </div>
+        {selected && !chosen && (state.by !== 'agent' || offPage.data) ? (
+          <p className="pad muted" aria-live="polite">
+            This row has no usage in this range.{' '}
+            <Button variant="ghost" size="sm" onClick={() => setParams({ sel: null })}>
+              Close detail
+            </Button>
+          </p>
+        ) : chosen ? (
+          <Detail row={chosen} state={state} />
+        ) : null}
+        <Ranking
+          view={view}
+          measure={m}
+          selected={selected}
+          onPhoneAll={() => setPhoneAll(true)}
+        />
+        <div className="table-foot muted small">
+          <span>
+            {fmt.int(view.rowCount)} {view.rowCount === 1 ? 'group' : 'groups'} ·{' '}
+            {fmt.int(view.totals.sessions)} sessions
+          </span>
+          {view.rowCount > view.rows.length && (
+            <Button variant="secondary" size="sm" onClick={() => setParams({ all: '1' })}>
+              Show all {fmt.int(view.rowCount)}
+            </Button>
+          )}
+          {state.all && view.rowCount > PAGE && (
+            <Button variant="secondary" size="sm" onClick={() => setParams({ all: null })}>
+              Show top {PAGE}
+            </Button>
+          )}
+        </div>
+      </section>
 
       <Footer view={view} />
     </div>
@@ -529,76 +519,87 @@ function Facet({
   );
 }
 
-function Delta({ now, then }: { now: number; then: number | undefined }) {
+const PRIOR: Record<Range, string> = {
+  today: 'yesterday',
+  yesterday: 'the day before',
+  '7d': 'the 7 days before',
+  '30d': 'the 30 days before',
+  '6m': 'the 6 months before',
+};
+
+function Delta({ now, then, range }: { now: number; then: number | undefined; range: Range }) {
   if (then === undefined || then === 0) return null;
   const change = (now - then) / then;
 
   return (
-    <span className="delta" title="Compared with the previous period of the same length">
-      {change >= 0 ? '▲' : '▼'} {Math.abs(Math.round(change * 100))}%
+    <span className="delta" title={`Against ${PRIOR[range]}`}>
+      {change >= 0 ? '+' : '−'}
+      {Math.abs(Math.round(change * 100))}% vs {PRIOR[range]}
     </span>
   );
 }
 
+/** The range's headline: API value, then the figures that explain it. */
 function Summary({
   totals,
   previous,
   agentSdk,
+  range,
 }: {
   totals: Totals;
   previous: Totals | null;
   agentSdk: AgentSdkUsage;
+  range: Range;
 }) {
   const cells = [
     {
-      label: 'API equivalent',
-      value: fmt.usd(totals.apiUsd),
-      delta: <Delta now={totals.apiUsd} then={previous?.apiUsd} />,
-      foot: 'Work at API prices · not a bill',
-    },
-    {
       label: 'Output tokens',
       value: fmt.tokens(totals.output),
-      delta: <Delta now={totals.output} then={previous?.output} />,
-      foot: `${fmt.tokens(totals.requests)} requests · ${fmt.int(totals.sessions)} sessions`,
+      title: `${fmt.int(totals.output)} output tokens`,
     },
     {
-      label: 'Cached input',
-      value: fmt.tokens(totals.cacheRead),
-      delta: null,
-      foot: `${fmt.tokens(totals.tokens)} total tokens, including cached reads`,
+      label: 'Requests',
+      value: fmt.tokens(totals.requests),
+      title: `${fmt.int(totals.requests)} requests in ${fmt.int(totals.sessions)} sessions`,
     },
     {
-      label: 'Assigned weekly use',
-      value: totals.points.week === null ? '–' : `${fmt.pts(totals.points.week)} pts`,
-      delta: null,
-      foot: 'Estimated across accounts · 100 pts = one full limit',
+      label: 'Cache hits',
+      value: fmt.pct(totals.cacheHitRate),
+      title: `${fmt.tokens(totals.cacheRead)} of ${fmt.tokens(totals.tokens)} tokens read from cache`,
+    },
+    {
+      label: 'Weekly limits used',
+      value: fmt.limit(totals.points.week),
+      title: "Summed over accounts; 100% is one account's full week",
     },
     {
       label: 'On the Agent SDK',
       value: totals.apiUsd ? fmt.pct(agentSdk.share) : '–',
-      delta: null,
-      foot: `of API value · claude -p and SDK apps · a 5-hour limit charges them ${agentSdk.factor}×, weekly 1×`,
+      title: `Share of API value from claude -p and SDK apps. A five-hour limit charges them ${agentSdk.factor}×; the week charges them the same as interactive work.`,
     },
   ];
 
   return (
-    <dl className="summary">
-      {cells.map((c) => (
-        <div key={c.label}>
-          <dt>{c.label}</dt>
-          <dd>
-            <span className="figure">{c.value}</span>
-            {c.delta}
-          </dd>
-          <dd className="muted small">{c.foot}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="summary">
+      <div className="headline">
+        <span className="muted small">API value</span>
+        <span className="figure">{fmt.usd(totals.apiUsd)}</span>
+        <span className="muted small">
+          <Delta now={totals.apiUsd} then={previous?.apiUsd} range={range} />
+          {previous ? ' · ' : ''}what this work would cost at API prices, not a bill
+        </span>
+      </div>
+      <dl className="figures-row">
+        {cells.map((c) => (
+          <div key={c.label} title={c.title}>
+            <dt>{c.label}</dt>
+            <dd>{c.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
-
-const shortAccount = (label: string) => label.split('@')[0];
 
 /** Each agent row's liveliest running session, so the dots follow the stream rather than the last usage read. */
 function useLiveRows() {
@@ -633,6 +634,7 @@ function Ranking({
   const total = value({ amount: view.totals, points: view.totals.points });
   const max = Math.max(...view.rows.map(value), 0) || 1;
   const toggle = (row: string) => setParams({ sel: row === selected ? null : row });
+  const columns = MEASURES.filter(([k]) => k !== 'fiveHour' || (view.totals.points.fiveHour ?? 0) > 0);
 
   if (!view.rows.length)
     return (
@@ -656,9 +658,9 @@ function Ranking({
           <tr>
             <th className="n idx">#</th>
             <th>Name</th>
-            <th className="share">Share · activity</th>
+            <th className="share">Share · over the range</th>
             <th className="accts">Accounts</th>
-            {MEASURES.map(([k, , , , , label]) => (
+            {columns.map(([k, , , , , label]) => (
               <th key={k} className="n" aria-sort={k === key ? 'descending' : undefined}>
                 <button type="button" onClick={() => setParams({ measure: k })}>
                   {label}
@@ -708,11 +710,18 @@ function Ranking({
                   <Spark values={r.series} color={r.color} />
                 </td>
                 <td className="accts muted small">
-                  {r.byAccount.map((a) => shortAccount(name(a.account))).join(' · ') || '–'}
+                  {r.byAccount
+                    .filter((a) => (a.week ?? 0) + (a.fiveHour ?? 0) > 0)
+                    .map((a) => shortAccount(name(a.account)))
+                    .join(' · ') || '–'}
                 </td>
-                {MEASURES.map(([k, , valueOf, format, , label]) => (
-                  <td key={k} className="n" data-label={label}>
-                    {k === 'fiveHour' || k === 'week' ? fmt.pts(r.points[k]) : format(valueOf(r))}
+                {columns.map(([k, , valueOf, format, , label]) => (
+                  <td
+                    key={k}
+                    className={k === key ? 'n on' : valueOf(r) === 0 ? 'n zero' : 'n'}
+                    data-label={label}
+                  >
+                    {k === 'fiveHour' || k === 'week' ? fmt.limit(r.points[k]) : format(valueOf(r))}
                   </td>
                 ))}
                 <td className="n last muted" data-label="Last">
@@ -732,70 +741,45 @@ function Ranking({
   );
 }
 
-const left = (used: number | null) =>
-  used === null ? 'unknown' : `${Math.max(0, Math.round(100 - used))}% left`;
-
-function AccountFilters({ selected }: { selected: readonly string[] }) {
+/** Each account's week now; picking one filters the page to its usage. */
+function LimitsNow({ selected }: { selected: readonly string[] }) {
   const [, setParams] = useParams();
-  const { accounts } = useAccounts();
-
-  if (!accounts.length) return null;
+  const { accounts, pool } = useAccounts();
 
   return (
-    <div
-      className="account-filters"
-      role="group"
-      aria-label="Current account limits; select to filter usage"
-    >
-      {accounts.map((account) => (
+    <aside className="limits-now" aria-labelledby="limits-title">
+      <div className="limits-head">
+        <h2 id="limits-title">Limits now</h2>
+        <Link to="/accounts">Accounts →</Link>
+      </div>
+      {!accounts.length && <p className="muted small">No account readings yet.</p>}
+      {accounts.map((a) => (
         <button
-          key={account.id}
+          key={a.id}
           type="button"
-          aria-pressed={selected.includes(account.id)}
+          className="limit-pick"
+          aria-pressed={selected.includes(a.id)}
+          title={`Show only ${a.label}'s usage`}
           onClick={() =>
             setParams({
-              'w.account': selected.length === 1 && selected[0] === account.id ? null : account.id,
+              'w.account': selected.length === 1 && selected[0] === a.id ? null : a.id,
               sel: null,
             })
           }
         >
-          <b>{account.label}</b>
-          <span className="small muted">
-            Week: {left(account.week.used)} · 5h: {left(account.fiveHour.used)}
+          <span className="limit-name">
+            <b className="clip">{a.label}</b>
+            {a.id === pool?.next ? (
+              <span className="chip next">next</span>
+            ) : (
+              a.standing !== 'open' && <span className="muted small">{STANDING[a.standing]}</span>
+            )}
           </span>
+          <Meter label="Week" window={a.week} size="sm" />
+          {a.fiveHour.used !== null && <Meter label="5 hours" window={a.fiveHour} size="sm" />}
         </button>
       ))}
-    </div>
-  );
-}
-
-function Limits() {
-  const { accounts, pool } = useAccounts();
-
-  return (
-    <section className="section" aria-labelledby="limits-title">
-      <div className="section-head">
-        <h2 id="limits-title">Current limits</h2>
-        <span className="spacer" />
-        <Link to="/accounts">Accounts →</Link>
-      </div>
-      <div className="pad limits">
-        {!accounts.length && <p className="muted">No account readings yet.</p>}
-        {accounts.map((a) => (
-          <div key={a.id} className="limit">
-            <div className="limit-name">
-              <b>{a.label}</b>
-              {a.id === pool?.next && <span className="chip next">next</span>}
-              {a.standing !== 'next' && <span className="muted small">{STANDING[a.standing]}</span>}
-            </div>
-            <div className="limit-meters">
-              <Meter label="5 hours" window={a.fiveHour} />
-              <Meter label="Week" window={a.week} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
+    </aside>
   );
 }
 
@@ -847,13 +831,15 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
       <div className="pad">
         <div className="figures">
           <div>
-            <span className="figure">{fmt.pts(row.points.fiveHour)}</span>
-            <span className="muted small">5-hour limit points</span>
+            <span className="figure">{fmt.limit(row.points.week)}</span>
+            <span className="muted small">of a weekly limit</span>
           </div>
-          <div>
-            <span className="figure">{fmt.pts(row.points.week)}</span>
-            <span className="muted small">Weekly limit points</span>
-          </div>
+          {(row.points.fiveHour ?? 0) > 0 && (
+            <div>
+              <span className="figure">{fmt.limit(row.points.fiveHour)}</span>
+              <span className="muted small">of a five-hour limit</span>
+            </div>
+          )}
           <div>
             <span className="figure">{fmt.usd(row.amount.apiUsd)}</span>
             <span className="muted small">{fmt.tokens(row.amount.tokens)} tokens</span>
@@ -862,7 +848,7 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
 
         {row.byAccount.length > 0 ? (
           <table className="table by-account">
-            <caption className="sr">Limit points by account</caption>
+            <caption className="sr">Limit use by account</caption>
             <thead>
               <tr>
                 <th>Account</th>
@@ -875,8 +861,8 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
               {row.byAccount.map((a) => (
                 <tr key={a.account}>
                   <td>{name(a.account)}</td>
-                  <td className="n">{fmt.pts(a.fiveHour)}</td>
-                  <td className="n">{fmt.pts(a.week)}</td>
+                  <td className="n">{fmt.limit(a.fiveHour)}</td>
+                  <td className="n">{fmt.limit(a.week)}</td>
                   <td className="share">
                     <span className="bar">
                       <i style={{ width: `${((a.week ?? 0) / weekTotal) * 100}%` }} />
@@ -929,7 +915,7 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
         )}
 
         <p className="muted small">
-          Points are estimates: each rise in an account's limit reading is split across the sessions
+          Limit shares are estimates: each rise in an account's reading is split across the sessions
           using it then, by API value.
         </p>
       </div>
@@ -937,47 +923,35 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
   );
 }
 
-function Coverage({ view }: { view: UsageView }) {
-  const selected = view.query.where.account;
-  const unassigned = view.coverage.unassigned.filter(
-    (u) => u.kind === 'week' && (!selected?.length || selected.includes(u.account))
-  );
-  const points = unassigned.reduce((sum, u) => sum + u.points, 0);
-  const unnamed = Math.max(0, view.coverage.totalApiUsd - view.coverage.namedApiUsd);
-
-  if (!points && !unnamed) return null;
-
-  return (
-    <p className="coverage muted small">
-      {points > 0 && (
-        <span>
-          {fmt.pts(points)} weekly points have no matching session. Rankings account for the
-          assigned portion.{' '}
-        </span>
-      )}
-      {unnamed > 0 && (
-        <span>
-          {fmt.pct(unnamed / view.coverage.totalApiUsd)} of API value has no agent name; it is
-          included under its project.
-        </span>
-      )}
-    </p>
-  );
-}
-
+/** Where the numbers come from and what they leave out, in one quiet line. */
 function Footer({ view }: { view: UsageView }) {
   const { coverage, sources } = view;
+  const selected = view.query.where.account;
+  const unassigned = coverage.unassigned
+    .filter((u) => u.kind === 'week' && (!selected?.length || selected.includes(u.account)))
+    .reduce((sum, u) => sum + u.points, 0);
+  const unnamed = Math.max(0, coverage.totalApiUsd - coverage.namedApiUsd);
+  const github = sources.devices.filter((d) => d.label.startsWith('GitHub '));
+  const machines = sources.devices.filter((d) => !d.label.startsWith('GitHub '));
+  const newest = Math.max(0, ...github.map((d) => d.syncedAt ?? 0));
 
   return (
     <footer className="foot muted small">
-      <span>
-        Limit readings since {coverage.limitsSince ? when(coverage.limitsSince) : 'never'}
-      </span>
-      {sources.devices.map((d) => (
+      {machines.map((d) => (
         <span key={d.id}>
           {d.label} synced {d.syncedAt ? when(d.syncedAt) : 'never'}
         </span>
       ))}
+      {github.length > 0 && (
+        <span title={github.map((d) => `${d.label}: ${d.syncedAt ? when(d.syncedAt) : 'never'}`).join('\n')}>
+          {github.length} GitHub {github.length === 1 ? 'repo' : 'repos'}, newest run {newest ? when(newest) : 'never'}
+        </span>
+      )}
+      <span>Limit readings since {coverage.limitsSince ? when(coverage.limitsSince) : 'never'}</span>
+      {unassigned > 0 && <span>{fmt.limit(unassigned)} of weekly limits has no matching session</span>}
+      {unnamed > 0 && coverage.totalApiUsd > 0 && (
+        <span>{fmt.pct(unnamed / coverage.totalApiUsd)} of API value has no agent name; it counts under its project</span>
+      )}
     </footer>
   );
 }

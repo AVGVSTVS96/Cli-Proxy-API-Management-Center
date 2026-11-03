@@ -120,7 +120,7 @@ export function Columns({
                       width={bar}
                       height={Math.max(0, y0 - y1)}
                       style={{ fill: `var(--series-${s.color})` }}
-                      stroke="var(--bg-primary)"
+                      stroke="var(--deck-surface)"
                       strokeWidth={series.length > 1 ? 1 : 0}
                     />
                   );
