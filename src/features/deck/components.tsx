@@ -3,6 +3,29 @@ import { useNow } from '@/hooks/useNow';
 import { elapsedAt, fmt, when } from './format';
 import type { LimitWindow } from './types';
 
+const SDK_ENTRYPOINTS = new Set(['sdk-cli', 'sdk-ts', 'sdk-py']);
+
+export const isAgentSdk = (entrypoint: string) => SDK_ENTRYPOINTS.has(entrypoint);
+
+/**
+ * Marks work that runs on the Agent SDK or `claude -p`. Where an account has a five-hour limit,
+ * that meter charges it more per token than interactive Claude Code; weekly use is the same.
+ * A share under 1 marks a group that only partly runs on it.
+ */
+export function SdkMark({ share }: { share: number }) {
+  if (share < 0.05) return null;
+  const part = share < 0.95 ? ` ${Math.round(share * 100)}%` : '';
+
+  return (
+    <span
+      className="sdk-mark"
+      title={`${Math.round(share * 100)}% of this ran on the Agent SDK or claude -p, which a five-hour limit charges more per token than interactive Claude Code`}
+    >
+      SDK{part}
+    </span>
+  );
+}
+
 /** A row of toggle buttons for one choice; the chosen one is pressed. */
 export function Seg<T extends string>({
   label,

@@ -2,11 +2,26 @@
 
 export type Range = 'today' | 'yesterday' | '7d' | '30d' | '6m';
 
-export type GroupBy = 'agent' | 'session' | 'project' | 'model' | 'harness' | 'device' | 'account';
+export type GroupBy =
+  | 'agent'
+  | 'session'
+  | 'project'
+  | 'model'
+  | 'harness'
+  | 'entrypoint'
+  | 'device'
+  | 'account';
 
 export type Measure = 'tokens' | 'api' | 'plan' | 'fiveHour' | 'week';
 
-export type Dimension = 'app' | 'harness' | 'model' | 'project' | 'device' | 'account';
+export type Dimension =
+  | 'app'
+  | 'harness'
+  | 'entrypoint'
+  | 'model'
+  | 'project'
+  | 'device'
+  | 'account';
 
 export type UsageQuery = {
   range: Range;
@@ -62,7 +77,14 @@ export type UsageRow = {
   /** The chosen measure per bucket of `UsageView.buckets`. */
   series: number[];
   live: LiveState | null;
+  /** How its sessions' Claude Code was started (cli, sdk-cli, t3-code...); 'mixed' when they differ. */
+  entrypoint: string;
+  /** Share of its API value that ran on the Agent SDK or `claude -p`, 0 to 1. */
+  agentSdk: number;
 };
+
+/** Agent SDK and `claude -p` usage, which the five-hour meter charges `factor` times interactive. */
+export type AgentSdkUsage = { apiUsd: number; share: number; fiveHour: number | null; factor: number };
 
 export type Totals = Amount & { sessions: number; cacheHitRate: number; points: Points };
 
@@ -88,6 +110,7 @@ export type UsageView = {
   sources: {
     devices: { id: string; label: string; syncedAt: number | null }[];
   };
+  agentSdk: AgentSdkUsage;
 };
 
 export type LimitWindow = {
@@ -158,6 +181,7 @@ export type LiveSession = {
   host: string;
   cwd: string;
   since: number;
+  entrypoint: string;
 };
 
 export type LiveKey = `s:${string}` | `a:${string}` | 'pool' | `app:${string}`;

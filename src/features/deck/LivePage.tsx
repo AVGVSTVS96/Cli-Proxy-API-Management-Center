@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useNow } from '@/hooks/useNow';
 import { LIVE_ORDER, useAccounts, useDeck, useLiveList } from './api';
-import { Alert } from './components';
+import { Alert, SdkMark, isAgentSdk } from './components';
 import { useWidth } from './useWidth';
 import { relativeTime, when } from './format';
 import type { AccountsView, LiveSession, Move, MoveCause } from './types';
@@ -308,6 +308,7 @@ function SessionTable({
               <span className="who">
                 <span className={`dot ${s.state}`} aria-label={s.state} />
                 <Link to={`/usage?sel=${encodeURIComponent(s.row)}`}>{s.label}</Link>
+                {isAgentSdk(s.entrypoint) && <SdkMark share={1} />}
               </span>
             </td>
             <td className="clip">{name(s.account)}</td>

@@ -706,7 +706,7 @@
 
   .summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin: 0;
     border-block: 1px solid var(--border-primary);
 
@@ -998,6 +998,19 @@
     overflow-wrap: anywhere;
   }
 
+  .sdk-mark {
+    flex: none;
+    padding: 0 4px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    color: var(--deck-warn);
+    font-family: $font-mono;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 15px;
+    letter-spacing: 0.02em;
+  }
+
   .cause {
     color: var(--text-secondary);
 
@@ -1192,6 +1205,12 @@
 
       > div:nth-child(n + 3) {
         border-top: 1px solid var(--border-color);
+      }
+
+      > div:nth-child(5) {
+        grid-column: 1 / -1;
+        border-left: 0;
+        padding-left: 0;
       }
     }
   }

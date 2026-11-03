@@ -7,9 +7,10 @@ import { useNow } from '@/hooks/useNow';
 import { useNotificationStore } from '@/stores';
 import { LIVE_ORDER, api, useAccounts, useDeck, useLiveList, useParams } from './api';
 import { Columns, Spark } from './chart';
-import { Alert, Meter, Seg } from './components';
+import { Alert, Meter, SdkMark, Seg } from './components';
 import { STANDING, fmt, when } from './format';
 import type {
+  AgentSdkUsage,
   Bucket,
   Dimension,
   GroupBy,
@@ -36,6 +37,7 @@ const GROUPS = [
   ['project', 'Projects'],
   ['model', 'Models'],
   ['harness', 'Harnesses'],
+  ['entrypoint', 'Entrypoints'],
   ['device', 'Devices'],
   ['account', 'Accounts'],
 ] as const satisfies readonly (readonly [GroupBy, string])[];
@@ -78,6 +80,7 @@ type MeasureDef = (typeof MEASURES)[number];
 const DIMENSIONS: [Dimension, string][] = [
   ['app', 'Apps'],
   ['harness', 'Harnesses'],
+  ['entrypoint', 'Entrypoints'],
   ['model', 'Models'],
   ['project', 'Projects'],
   ['device', 'Devices'],
@@ -235,7 +238,7 @@ export function UsagePage() {
 
 
       <AccountFilters selected={state.where.find(([d]) => d === 'account')?.[1] ?? []} />
-      <Summary totals={view.totals} previous={view.previous} />
+      <Summary totals={view.totals} previous={view.previous} agentSdk={view.agentSdk} />
       <Coverage view={view} />
 
       <div className="split">
@@ -537,7 +540,15 @@ function Delta({ now, then }: { now: number; then: number | undefined }) {
   );
 }
 
-function Summary({ totals, previous }: { totals: Totals; previous: Totals | null }) {
+function Summary({
+  totals,
+  previous,
+  agentSdk,
+}: {
+  totals: Totals;
+  previous: Totals | null;
+  agentSdk: AgentSdkUsage;
+}) {
   const cells = [
     {
       label: 'API equivalent',
@@ -562,6 +573,12 @@ function Summary({ totals, previous }: { totals: Totals; previous: Totals | null
       value: totals.points.week === null ? '–' : `${fmt.pts(totals.points.week)} pts`,
       delta: null,
       foot: 'Estimated across accounts · 100 pts = one full limit',
+    },
+    {
+      label: 'On the Agent SDK',
+      value: totals.apiUsd ? fmt.pct(agentSdk.share) : '–',
+      delta: null,
+      foot: `of API value · claude -p and SDK apps · a 5-hour limit charges them ${agentSdk.factor}×, weekly 1×`,
     },
   ];
 
@@ -674,6 +691,7 @@ function Ranking({
                   <span className="who">
                     <i className="swatch" data-c={r.color} />
                     <b>{r.label}</b>
+                    <SdkMark share={r.agentSdk} />
                     {state && <span className={`dot ${state}`} title={state} aria-label={state} />}
                   </span>
                   <span className="muted small">
