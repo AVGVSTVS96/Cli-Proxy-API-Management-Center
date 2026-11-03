@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { codeFile } from '@/features/deck/code/pierre';
 import { filesUrl, nameFor, parseFilesRoute, resolveLink } from '@/features/deck/files/urls';
 
 const parse = (url: string) => parseFilesRoute(url.replace(/^\/files\/?/, ''));
@@ -45,4 +46,14 @@ describe('Markdown links', () => {
 test('history can follow one file', () => {
   expect(filesUrl.history('hex', '', 'memory/LOG.txt')).toBe('/files/hex/history?path=memory%2FLOG.txt');
   expect(parse(filesUrl.history('hex', 'abc123', 'a.md').split('?')[0])).toEqual({ view: 'history', ws: 'hex', sha: 'abc123' });
+});
+
+describe('Code grammars', () => {
+  test('a script without an extension reads its grammar off the #! line', () => {
+    expect(codeFile('bin/job', '#!/usr/bin/env bun\nconst a = 1;\n').lang).toBe('typescript');
+    expect(codeFile('bin/backup', '#!/usr/bin/env bash\nset -e\n').lang).toBe('shellscript');
+    expect(codeFile('bin/guard', '#!/usr/bin/env python3\n').lang).toBe('python');
+    expect(codeFile('bin/notes', 'no shebang here').lang).toBe('text');
+    expect(codeFile('a.ts', '#!/bin/sh\n').lang).toBe('typescript');
+  });
 });

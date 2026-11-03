@@ -2,6 +2,23 @@ import { useEffect, useEffectEvent, useRef } from 'react';
 import type { FileTreeRowDecoration, GitStatusEntry } from '@pierre/trees';
 import { FileTree, useFileTree } from '@pierre/trees/react';
 import { Empty } from '../components';
+import { useSlashToFind } from './bench';
+
+/** The tree's filter box as a bar, as tall as the bar beside it, so the two rule one line. */
+const SEARCH_BAR = `
+  [data-file-tree-search-container] {
+    box-sizing: border-box;
+    height: 41px;
+    margin-bottom: 4px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--trees-border-color-override, currentColor);
+  }
+  [data-file-tree-search-input] {
+    box-sizing: border-box;
+    height: 28px;
+    border-radius: 7px;
+  }
+`;
 
 /** Past this many files a change set starts folded, so a few hundred untracked logs stay one click away. */
 const OPEN_LIMIT = 300;
@@ -24,6 +41,7 @@ export function PathTree({
   open = false,
   decorate,
   search = true,
+  main = false,
 }: {
   paths: string[] | null;
   status: GitStatusEntry[];
@@ -35,6 +53,8 @@ export function PathTree({
   decorate?: (path: string) => FileTreeRowDecoration | null;
   /** A filter box over the tree; worth it past a screenful of files. */
   search?: boolean;
+  /** The page's main tree, whose filter "/" jumps to. */
+  main?: boolean;
 }) {
   const decorations = useRef(decorate);
   const known = useRef<Set<string> | null>(null);
@@ -51,7 +71,9 @@ export function PathTree({
     flattenEmptyDirectories: true,
     initialExpansion: 'closed',
     search,
+    fileTreeSearchMode: 'hide-non-matches',
     density: 'compact',
+    unsafeCSS: SEARCH_BAR,
     renderRowDecoration: ({ row }) => (row.kind === 'file' ? (decorations.current?.(row.path) ?? null) : null),
     onSelectionChange: (picked) => {
       const path = picked[0];
@@ -83,6 +105,8 @@ export function PathTree({
 
     if (added.length || removed.length) model.batch([...removed, ...added]);
   }, [model, paths]);
+
+  useSlashToFind(main && search, () => model.openSearch());
 
   useEffect(() => {
     model.setGitStatus(status);

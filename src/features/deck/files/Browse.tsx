@@ -9,6 +9,8 @@ import { Empty, Seg } from '../components';
 import { messageOf, notify, useAction } from '../actions';
 import { fmt, relativeTime } from '../format';
 import type { Changes, FileBody, RepoSummary, Workspace } from '../types';
+import { BarTools, Side, useBench } from './bench';
+import { copy } from './copy';
 import { Markdown } from './Markdown';
 import { PathTree } from './PathTree';
 import { fileApi, filesUrl, nameFor, rawApi, wsApi, wsTags } from './urls';
@@ -37,16 +39,17 @@ export function Browse({ ws, repo, file }: { ws: Workspace; repo: RepoSummary; f
   const readme = useMemo(() => (files.data ? (README.find((name) => files.data!.includes(name)) ?? null) : null), [files.data]);
 
   return (
-    <div className="bench-grid" data-open={file ? 'main' : 'side'}>
-      <aside className="bench-side">
+    <div className="bench-grid">
+      <Side>
         <PathTree
           key={ws.id}
           paths={files.data}
           status={status}
           selected={file}
+          main
           onPick={(path) => navigate(filesUrl.browse(ws.id, path))}
         />
-      </aside>
+      </Side>
       <div className="bench-main">
         {file && folder ? (
           <Folder ws={ws} repo={repo} path={file} paths={folder} status={status} />
@@ -68,9 +71,6 @@ function Crumbs({ ws, repo, path, folder = false }: { ws: Workspace; repo: RepoS
 
   return (
     <nav className="crumbs" aria-label="Path">
-      <Link className="back" to={filesUrl.browse(ws.id)} aria-label="Back to the file list">
-        ←
-      </Link>
       <Link to={filesUrl.browse(ws.id)}>{repo.name}</Link>
       {parts.map((part, i) => {
         const at = parts.slice(0, i + 1).join('/');
@@ -125,10 +125,11 @@ function Folder({
 
   return (
     <div className="viewer">
-      <div className="file-head">
+      <div className="file-bar">
         <Crumbs ws={ws} repo={repo} path={path} folder />
-        <span className="spacer" />
-        <span className="muted small">{fmt.int(paths.length)} files inside</span>
+        <div className="facts">
+          <span>{fmt.int(paths.length)} files inside</span>
+        </div>
       </div>
       <ul className="folder">
         {entries.dirs.map(([name, count]) => (
@@ -173,22 +174,6 @@ const FileIcon = () => (
 const bytes = (n: number) =>
   n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 ** 2).toFixed(1)} MB`;
 
-/** Copies text; the dashboard is served over plain http, where navigator.clipboard is missing. */
-function copy(text: string) {
-  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
-  const area = document.createElement('textarea');
-
-  area.value = text;
-  area.style.position = 'fixed';
-  area.style.opacity = '0';
-  document.body.append(area);
-  area.select();
-  document.execCommand('copy');
-  area.remove();
-
-  return Promise.resolve();
-}
-
 type Mode = 'preview' | 'code' | 'diff';
 
 const MD_MODE_KEY = 'files.markdown';
@@ -201,6 +186,7 @@ function Viewer({ ws, repo, path, overview = false }: { ws: Workspace; repo: Rep
   const options = useCodeOptions();
   const saver = useSaver(ws.id, path);
   const { busy, run } = useAction();
+  const { narrow } = useBench();
   const markdown = MARKDOWN.test(path);
   const image = IMAGE.test(path);
 
@@ -273,64 +259,65 @@ function Viewer({ ws, repo, path, overview = false }: { ws: Workspace; repo: Rep
 
   return (
     <div className="viewer">
-      <div className="file-head">
+      <div className="file-bar">
         <Crumbs ws={ws} repo={repo} path={path} />
-        <span className="spacer" />
-        {file && modes.length > 1 && <Seg label="Show" value={mode} options={modes} onChange={choose} />}
-        <button
-          type="button"
-          className="icon-button"
-          title="Copy path"
-          aria-label="Copy path"
-          onClick={() => void copy(path).then(() => notify(`Copied ${path}`))}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
-            <rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
-            <path d="M11 3V2.5A1.5 1.5 0 0 0 9.5 1h-6A1.5 1.5 0 0 0 2 2.5v6A1.5 1.5 0 0 0 3.5 10H4" fill="none" stroke="currentColor" strokeWidth="1.3" />
-          </svg>
-        </button>
-        {file &&
-          (editing ? (
+        <div className="facts">
+          {body.last ? (
             <>
-              <span className="save-state">{saver.label}</span>
-              <Button size="sm" onClick={finish}>
-                Done
-              </Button>
+              <Link className="commit-link" to={filesUrl.history(ws.id, body.last.sha)} title={body.last.subject}>
+                {body.last.subject}
+              </Link>
+              <span className="who">
+                {body.last.author} · <time dateTime={new Date(body.last.at).toISOString()}>{relativeTime(body.last.at)}</time>
+              </span>
             </>
           ) : (
-            <Button
-              size="sm"
-              variant={ws.name ? 'primary' : 'secondary'}
-              loading={busy === 'edit'}
-              onClick={startEdit}
-              title={ws.name ? undefined : 'The live checkout is read-only, since running sessions read it. Editing opens a worktree.'}
-            >
-              {ws.name ? 'Edit' : 'Edit in a worktree'}
-            </Button>
-          ))}
-      </div>
-      <div className="file-meta">
-        {body.last ? (
-          <>
-            <Link className="commit-link" to={filesUrl.history(ws.id, body.last.sha)} title={body.last.subject}>
-              {body.last.subject}
+            <span className="git untracked">{fresh ? 'Not in git yet' : 'Not committed'}</span>
+          )}
+          <span className="spacer" />
+          {changed && !editing && <span className="git modified">{ws.name ? 'Changed in this worktree' : 'Uncommitted changes'}</span>}
+          {lines !== null && <span className="num size">{fmt.int(lines)} lines</span>}
+          <span className="num size">{bytes(body.size)}</span>
+          {body.last && (
+            <Link to={filesUrl.history(ws.id, '', path)} className="history-link">
+              History
             </Link>
-            <span className="who">
-              {body.last.author} · <time dateTime={new Date(body.last.at).toISOString()}>{relativeTime(body.last.at)}</time>
-            </span>
-          </>
-        ) : (
-          <span className="git untracked">{fresh ? 'Not in git yet' : 'Not committed'}</span>
-        )}
-        <span className="spacer" />
-        {changed && !editing && <span className="git modified">{ws.name ? 'Changed in this worktree' : 'Uncommitted changes'}</span>}
-        {lines !== null && <span>{fmt.int(lines)} lines</span>}
-        <span>{bytes(body.size)}</span>
-        {body.last && (
-          <Link to={filesUrl.history(ws.id, '', path)} className="history-link">
-            History
-          </Link>
-        )}
+          )}
+        </div>
+        <BarTools>
+          {file && modes.length > 1 && <Seg label="Show" value={mode} options={modes} onChange={choose} />}
+          <button
+            type="button"
+            className="icon-button copy-path"
+            title="Copy path"
+            aria-label="Copy path"
+            onClick={() => void copy(path).then(() => notify(`Copied ${path}`))}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+              <rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+              <path d="M11 3V2.5A1.5 1.5 0 0 0 9.5 1h-6A1.5 1.5 0 0 0 2 2.5v6A1.5 1.5 0 0 0 3.5 10H4" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+          </button>
+          {file &&
+            (editing ? (
+              <>
+                <span className="save-state">{saver.label}</span>
+                <Button size="sm" onClick={finish}>
+                  Done
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant={ws.name ? 'primary' : 'secondary'}
+                loading={busy === 'edit'}
+                onClick={startEdit}
+                title={ws.name ? undefined : 'The live checkout is read-only, since running sessions read it. Editing opens a worktree.'}
+              >
+                {ws.name || narrow ? 'Edit' : 'Edit in a worktree'}
+              </Button>
+            ))}
+        </BarTools>
       </div>
       {!file ? (
         image && body.binary ? (

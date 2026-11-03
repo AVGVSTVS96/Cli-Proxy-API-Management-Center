@@ -10,6 +10,7 @@ import { Empty, Seg } from '../components';
 import { ask, notify, useAction } from '../actions';
 import { fmt } from '../format';
 import type { Change, Changes as ChangeSet, FileBody, RepoSummary, Workspace, WorkspaceDiff } from '../types';
+import { BarTools, Side, useBench } from './bench';
 import { PathTree } from './PathTree';
 import { fileApi, filesUrl, wsApi, wsTags } from './urls';
 
@@ -40,6 +41,7 @@ export function Changes({ ws, repo }: { ws: Workspace; repo: RepoSummary }) {
   const code = useCodeOptions(style);
   const view = useRef<CodeViewHandle<undefined, undefined>>(null);
   const [focused, setFocused] = useState('');
+  const { narrow, setTree } = useBench();
 
   // Both sides of a file in full, so the folded unchanged lines between hunks open on a click.
   const options = useMemo(() => {
@@ -96,6 +98,8 @@ export function Changes({ ws, repo }: { ws: Workspace; repo: RepoSummary }) {
   const pick = (path: string) => {
     setFocused(path);
 
+    if (narrow) setTree(false);
+
     if (folded && byPath.get(path)?.status === 'untracked' && !opened.includes(path)) setOpened([...opened, path]);
 
     requestAnimationFrame(() => view.current?.scrollTo({ type: 'item', id: path, behavior: 'smooth' }));
@@ -107,10 +111,10 @@ export function Changes({ ws, repo }: { ws: Workspace; repo: RepoSummary }) {
   const missing = folded ? [...omitted].filter((p) => byPath.get(p)?.status !== 'untracked') : [...omitted];
 
   return (
-    <div className="bench-grid review" data-open="main" data-empty={files?.length === 0 ? '' : undefined}>
-      <aside className="bench-side">
-        <PathTree key={ws.id} paths={paths} status={status} selected={focused} onPick={pick} open={openFolders} decorate={decorate} />
-      </aside>
+    <div className="bench-grid review" data-empty={files?.length === 0 ? '' : undefined}>
+      <Side>
+        <PathTree key={ws.id} main paths={paths} status={status} selected={focused} onPick={pick} open={openFolders} decorate={decorate} />
+      </Side>
       <div className="bench-main">
         <ShipBar ws={ws} repo={repo} changes={changes.data} edited={edited} fresh={fresh}>
           {items.length > 0 && (
@@ -139,16 +143,6 @@ export function Changes({ ws, repo }: { ws: Workspace; repo: RepoSummary }) {
           </Empty>
         ) : (
           <div className="review-body">
-            {folded && (
-              <div className="fold-note">
-                <b>{plural(fresh.length, 'new file')}</b> git doesn't track yet, folded so the edits stay readable:{' '}
-                {piles(fresh)
-                  .slice(0, 4)
-                  .map(([top, n]) => `${top} ${fmt.int(n)}`)
-                  .join(', ')}
-                . Pick one in the tree to read it here.
-              </div>
-            )}
             {missing.length > 0 && <Omitted ws={ws} paths={missing} focused={focused} />}
             {items.length ? (
               <CodeView ref={view} className="code" items={items} options={options.view} />
@@ -209,19 +203,34 @@ function ShipBar({
   const ahead = changes?.ahead ?? 0;
   const behind = changes?.behind ?? 0;
 
+  const folded = fresh.length > UNTRACKED_SHOWN;
   const summary = changes && (
-    <p className="summary-line">
+    <span className="summary-line">
       {edited.length > 0 && (
         <>
-          <b>{plural(edited.length, 'file')} edited</b>{' '}
-          <span className="plus">+{fmt.int(added)}</span>
-          {removed > 0 && <span className="minus"> −{fmt.int(removed)}</span>}
+          <b>{plural(edited.length, 'file')} edited</b>
+          <span className="plus num">+{fmt.int(added)}</span>
+          {removed > 0 && <span className="minus num">−{fmt.int(removed)}</span>}
         </>
       )}
-      {edited.length > 0 && fresh.length > 0 && <span className="sep"> · </span>}
-      {fresh.length > 0 && <span>{plural(fresh.length, 'new file')}</span>}
+      {fresh.length > 0 && (
+        <span
+          className="untracked-count"
+          title={
+            folded
+              ? `Folded so the edits stay readable; pick one in the tree to read it here. ${piles(fresh)
+                  .slice(0, 5)
+                  .map(([top, n]) => `${top} ${fmt.int(n)}`)
+                  .join(', ')}`
+              : undefined
+          }
+        >
+          {plural(fresh.length, 'new file')}
+          {folded && ', folded'}
+        </span>
+      )}
       {!edited.length && !fresh.length && <span>No changes</span>}
-    </p>
+    </span>
   );
 
   const push = () =>
@@ -232,21 +241,21 @@ function ShipBar({
 
   if (!ws.name) {
     return (
-      <div className="ship-bar">
-        <div className="ship-state">
-          {summary}
-          <p className="muted small">
-            Live checkout on <b>{ws.branch ?? 'a detached HEAD'}</b>, read-only here since running sessions read it.
-          </p>
+      <div className="file-bar ship-bar">
+        {summary}
+        <div className="facts">
+          <span title="Running sessions read the live checkout, so it's read-only here. Edit in a worktree.">
+            <span className="branch">{ws.branch ?? 'detached HEAD'}</span> · read-only
+          </span>
         </div>
-        <div className="ship-actions">
+        <BarTools>
           {children}
           {!repo.review && (repo.unpushed ?? 0) > 0 && (
             <Button size="sm" variant="secondary" loading={busy === 'push'} onClick={push}>
               Push {plural(repo.unpushed ?? 0, 'commit')}
             </Button>
           )}
-        </div>
+        </BarTools>
       </div>
     );
   }
@@ -292,15 +301,35 @@ function ShipBar({
     });
 
   return (
-    <div className="ship-bar worktree">
-      <div className="ship-state">
-        {summary}
-        <p className="muted small">
-          <span className="branch">{ws.branch}</span> → <span className="branch">{ws.base}</span> · {plural(ahead, 'commit')} to ship
-          {behind > 0 && ` · ${plural(behind, 'newer commit')} on ${ws.base}, rebased on ship`}
-        </p>
+    <div className="file-bar ship-bar worktree">
+      {summary}
+      <div className="facts">
+        <span>
+          <span className="branch">{ws.branch}</span> → <span className="branch">{ws.base}</span>
+        </span>
+        {ahead > 0 && <span className="ahead">{plural(ahead, 'commit')} to ship</span>}
+        {behind > 0 && <span title={`Ship rebases onto the newest ${ws.base}`}>{fmt.int(behind)} behind</span>}
+        {changes?.dirty && (
+          <form
+            className="commit-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void commit();
+            }}
+          >
+            <input
+              aria-label="Commit message"
+              placeholder="Commit message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+            <Button size="sm" type="submit" loading={busy === 'commit'} disabled={!message.trim()}>
+              Commit, signed
+            </Button>
+          </form>
+        )}
       </div>
-      <div className="ship-actions">
+      <BarTools>
         {children}
         <Button size="sm" variant="ghost" type="button" loading={busy === 'remove'} onClick={remove}>
           Remove
@@ -316,26 +345,7 @@ function ShipBar({
         >
           {repo.review ? `Open a PR into ${ws.base}` : `Ship to ${ws.base}`}
         </Button>
-      </div>
-      {changes?.dirty && (
-        <form
-          className="commit-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void commit();
-          }}
-        >
-          <input
-            aria-label="Commit message"
-            placeholder="Commit message, like fix(rules): say when to ask"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <Button size="sm" type="submit" loading={busy === 'commit'} disabled={!message.trim()}>
-            Commit, signed
-          </Button>
-        </form>
-      )}
+      </BarTools>
     </div>
   );
 }

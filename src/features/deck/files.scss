@@ -1,5 +1,6 @@
-// Files: one sheet that fills the window. A bar picks the repo, the checkout and the view; under it
-// the tree and the open file scroll on their own. Below 760px it shows one pane at a time.
+// Files: the title line picks the repo; one sheet fills the rest of the window. Its top bar picks the
+// checkout and the view and holds the open view's controls; a second bar says what's open. Below
+// 760px the tree slides over the file.
 
 .files {
   --files-line: var(--border-color);
@@ -53,41 +54,134 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .bench {
+  .files-head {
     display: flex;
-    flex-direction: column;
-    height: max(520px, calc(100dvh - 184px));
-    overflow: hidden;
-    border: 1px solid var(--files-line);
-    border-radius: 12px;
-    background: var(--deck-surface);
-  }
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    min-height: 40px;
 
-  // The bar: repos as tabs on the left; checkout and view on the right.
+    h1 {
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
 
-  .bench-bar {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-between;
-    gap: 8px 16px;
-    min-height: 48px;
-    padding: 0 10px 0 6px;
-    border-bottom: 1px solid var(--files-line);
+    .live-state {
+      margin-left: auto;
+    }
   }
 
   .repo-tabs {
-    display: flex;
-    align-items: stretch;
+    display: inline-flex;
+    gap: 2px;
     min-width: 0;
+    max-width: 100%;
+    padding: 3px;
     overflow-x: auto;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
     scrollbar-width: none;
 
     a {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 0 12px;
+      padding: 5px 12px;
+      border-radius: 7px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 20px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color var(--dur-hover) var(--ease-out-strong);
+
+      &:hover {
+        color: var(--text-primary);
+      }
+
+      &[aria-current='page'] {
+        background: var(--deck-surface);
+        color: var(--text-primary);
+        box-shadow: 0 1px 3px var(--border-color);
+      }
+    }
+  }
+
+  .bench {
+    display: flex;
+    flex-direction: column;
+    height: max(520px, calc(100dvh - 166px));
+    overflow: hidden;
+    border: 1px solid var(--files-line);
+    border-radius: 12px;
+    background: var(--deck-surface);
+  }
+
+  // The top bar: tree toggle, checkout, views; the open view's controls at the right end.
+
+  .bench-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    min-height: 46px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--files-line);
+
+    > .icon-button {
+      align-self: center;
+    }
+  }
+
+  .bench-tools {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    min-width: 0;
+
+    .checkout {
+      align-self: center;
+    }
+  }
+
+  .bar-slot,
+  .bar-tools {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .bar-slot {
+    margin-left: auto;
+  }
+
+  .bar-slot .seg button,
+  .bar-tools .seg button {
+    padding: 4px 10px;
+    font-size: 12.5px;
+  }
+
+  // Every control in the bars stands as tall as the segmented ones beside it.
+  .bench .btn-sm {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .views {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       margin-bottom: -1px;
+      padding: 0 10px;
       border-bottom: 2px solid transparent;
       color: var(--text-secondary);
       font-size: 13.5px;
@@ -109,48 +203,10 @@
     .count {
       margin-left: 0;
     }
-  }
 
-  .bench-tools {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .views {
-    display: inline-flex;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 9px;
-    background: var(--bg-tertiary);
-
-    a {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      color: var(--text-secondary);
-      font-size: 13px;
-      font-weight: 500;
-      line-height: 20px;
-      text-decoration: none;
-      white-space: nowrap;
-
-      &:hover {
-        color: var(--text-primary);
-      }
-
-      &[aria-current='page'] {
-        background: var(--deck-surface);
-        color: var(--text-primary);
-        box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
-      }
-    }
-
-    .count {
-      margin-left: 0;
+    [aria-current='page'] .count {
+      background: var(--deck-accent-soft);
+      color: var(--deck-accent);
     }
 
     .count.ahead {
@@ -226,7 +282,7 @@
     position: absolute;
     z-index: 20;
     top: calc(100% + 6px);
-    right: 0;
+    left: 0;
     display: grid;
     gap: 1px;
     width: min(340px, 86vw);
@@ -235,7 +291,7 @@
     border-radius: 10px;
     background: var(--floating-surface);
     box-shadow: var(--floating-shadow);
-    transform-origin: top right;
+    transform-origin: top left;
     animation: files-menu 160ms var(--ease-out-strong);
 
     .menu-label {
@@ -300,9 +356,10 @@
     }
   }
 
-  // The two panes.
+  // The two panes. Hiding the tree folds its column away; on a narrow screen it slides over instead.
 
   .bench-grid {
+    position: relative;
     display: grid;
     flex: 1;
     grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
@@ -310,6 +367,7 @@
     min-height: 0;
   }
 
+  .bench[data-tree='closed'] .bench-grid,
   .bench-grid[data-empty] {
     grid-template-columns: minmax(0, 1fr);
 
@@ -325,6 +383,10 @@
     overflow: auto;
     border-right: 1px solid var(--files-line);
     background: var(--files-quiet);
+  }
+
+  .scrim {
+    display: none;
   }
 
   .bench-main {
@@ -353,6 +415,36 @@
     --trees-font-size-override: 13px;
   }
 
+  // A side list's own filter, the same height as the bar beside it.
+
+  .side-search {
+    flex: none;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--files-line);
+
+    input {
+      width: 100%;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--files-line);
+      border-radius: 7px;
+      background: var(--deck-surface);
+      color: var(--text-primary);
+      font: inherit;
+      font-size: 13px;
+
+      &::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      &:focus {
+        border-color: var(--deck-accent);
+        outline: none;
+        box-shadow: 0 0 0 3px var(--deck-accent-soft);
+      }
+    }
+  }
+
   .viewer {
     display: flex;
     flex: 1;
@@ -360,99 +452,26 @@
     min-height: 0;
   }
 
-  // The open file: path, then what git knows about it, then the file.
+  // The second bar: what's open (a path, a commit, a change set), then what git knows about it.
 
-  .file-head {
+  .file-bar {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 48px;
-    padding: 6px 10px 6px 16px;
-    border-bottom: 1px solid var(--files-line);
-  }
-
-  .crumbs {
-    display: flex;
-    align-items: baseline;
-    min-width: 0;
-    overflow: hidden;
-    font-size: 13.5px;
-    white-space: nowrap;
-
-    a {
-      color: var(--text-secondary);
-      text-decoration: none;
-
-      &:hover {
-        color: var(--text-primary);
-        text-decoration: underline;
-        text-underline-offset: 3px;
-      }
-    }
-
-    .crumb {
-      display: inline-flex;
-      min-width: 0;
-    }
-
-    .crumb:last-child {
-      flex: 1;
-      overflow: hidden;
-    }
-
-    b {
-      overflow: hidden;
-      font-weight: 600;
-      text-overflow: ellipsis;
-    }
-
-    .sep {
-      padding: 0 6px;
-      color: var(--text-quaternary);
-    }
-
-    > .muted {
-      margin-left: 10px;
-    }
-  }
-
-  .icon-button {
-    display: inline-grid;
     flex: none;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border: 0;
-    border-radius: 7px;
-    background: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-
-    &:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-  }
-
-  .save-state {
-    color: var(--text-secondary);
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .file-head .seg button {
-    padding: 4px 10px;
-    font-size: 12.5px;
-  }
-
-  .file-meta {
-    display: flex;
     align-items: center;
     gap: 6px 14px;
-    min-height: 34px;
-    padding: 0 16px;
+    min-height: 41px;
+    padding: 4px 14px 4px 16px;
     border-bottom: 1px solid var(--files-line);
-    background: var(--files-quiet);
+    font-size: 13px;
+  }
+
+  .facts {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 6px 14px;
+    min-width: 0;
+    overflow: hidden;
     color: var(--text-secondary);
     font-size: 12.5px;
     white-space: nowrap;
@@ -475,19 +494,163 @@
     }
 
     .spacer {
-      min-width: 8px;
+      min-width: 4px;
     }
 
-    .history-link {
+    .history-link,
+    .more {
+      padding: 0;
+      border: 0;
+      background: none;
       color: var(--deck-accent);
+      font: inherit;
       font-weight: 550;
       text-decoration: none;
+      cursor: pointer;
 
       &:hover {
         text-decoration: underline;
         text-underline-offset: 3px;
       }
     }
+
+    .sha {
+      padding: 1px 6px;
+      border: 0;
+      border-radius: 5px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-family: $font-mono;
+      font-size: 11.5px;
+      cursor: copy;
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+
+    .branch {
+      color: var(--text-primary);
+      font-family: $font-mono;
+      font-size: 12px;
+    }
+
+    .ahead {
+      color: var(--deck-accent);
+      font-weight: 550;
+    }
+  }
+
+  // A path too long for its room loses its first folders, never the file's name.
+  .crumbs {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: baseline;
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 45%;
+    overflow: hidden;
+    font-size: 13.5px;
+    white-space: nowrap;
+
+    a {
+      flex: none;
+      color: var(--text-secondary);
+      text-decoration: none;
+
+      &:hover {
+        color: var(--text-primary);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+    }
+
+    .crumb {
+      display: inline-flex;
+      flex: none;
+    }
+
+    b {
+      overflow: hidden;
+      font-weight: 600;
+      text-overflow: ellipsis;
+    }
+
+    .sep {
+      padding: 0 5px;
+      color: var(--text-quaternary);
+    }
+  }
+
+  .crumbs + .facts::before,
+  .commit-subject + .facts::before,
+  .summary-line + .facts::before {
+    content: '';
+    flex: none;
+    width: 1px;
+    height: 14px;
+    background: var(--files-line);
+  }
+
+  // A commit's subject gives way before any of its facts do.
+  .commit-subject {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .commit-bar .facts {
+    flex: 1 0 auto;
+  }
+
+  .commit-body-text,
+  .bar-note {
+    flex: none;
+    max-height: 160px;
+    margin: 0;
+    padding: 10px 16px;
+    overflow: auto;
+    border-bottom: 1px solid var(--files-line);
+    background: var(--files-quiet);
+    color: var(--text-secondary);
+    font-size: 13px;
+    white-space: pre-wrap;
+  }
+
+  .bar-note {
+    padding: 7px 16px;
+    font-size: 12.5px;
+  }
+
+  .icon-button {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+  }
+
+  .tree-toggle[aria-expanded='true'] {
+    color: var(--text-primary);
+  }
+
+  .save-state {
+    color: var(--text-secondary);
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   .git {
@@ -506,6 +669,12 @@
     &.deleted {
       color: var(--deck-bad);
     }
+  }
+
+  // The code sits on the sheet itself rather than the theme's own near-black or white.
+  diffs-container {
+    --diffs-light-bg: var(--deck-surface);
+    --diffs-dark-bg: var(--deck-surface);
   }
 
   .code {
@@ -755,70 +924,51 @@
     }
   }
 
-  // Changes: what changed and the one next step, over the review.
-
-  .ship-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 16px;
-    padding: 10px 12px 10px 16px;
-    border-bottom: 1px solid var(--files-line);
-  }
-
-  .ship-state {
-    display: grid;
-    flex: 1 1 280px;
-    gap: 2px;
-    min-width: 0;
-
-    .branch {
-      font-family: $font-mono;
-      font-size: 12px;
-      color: var(--text-primary);
-    }
-  }
+  // Changes: what changed and how far it is from shipping; commit right there when it's dirty.
 
   .summary-line {
-    font-size: 14px;
+    display: inline-flex;
+    flex: none;
+    align-items: baseline;
+    gap: 6px 10px;
+    white-space: nowrap;
 
     b {
       font-weight: 600;
     }
 
-    .sep {
-      color: var(--text-tertiary);
+    .untracked-count {
+      color: var(--text-secondary);
+      font-size: 12.5px;
     }
-  }
 
-  .ship-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .ship-actions .seg button {
-    padding: 4px 10px;
-    font-size: 12.5px;
+    .num {
+      font-size: 12.5px;
+    }
   }
 
   .commit-form {
     display: flex;
-    flex-basis: 100%;
-    gap: 8px;
+    flex: 1;
+    gap: 6px;
+    min-width: 200px;
+    margin-left: auto;
 
     input {
       flex: 1;
       min-width: 0;
-      height: 34px;
-      padding: 0 12px;
+      height: 30px;
+      padding: 0 10px;
       border: 1px solid var(--border-primary);
-      border-radius: 8px;
+      border-radius: 7px;
       background: var(--deck-surface);
       color: var(--text-primary);
       font: inherit;
-      font-size: 13.5px;
+      font-size: 13px;
+
+      &::placeholder {
+        color: var(--text-tertiary);
+      }
 
       &:focus {
         border-color: var(--deck-accent);
@@ -866,15 +1016,33 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--files-line);
-    font-size: 13px;
+    margin: 8px 8px 0;
+    padding: 5px 6px 5px 10px;
+    border-radius: 7px;
+    background: var(--deck-accent-soft);
+    font-size: 12.5px;
+
+    b {
+      font-family: $font-mono;
+      font-size: 12px;
+      font-weight: 550;
+    }
 
     a {
+      display: inline-grid;
       flex: none;
-      color: var(--deck-accent);
-      font-weight: 550;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      color: var(--text-secondary);
+      font-size: 15px;
       text-decoration: none;
+
+      &:hover {
+        background: var(--deck-accent-soft);
+        color: var(--text-primary);
+      }
     }
   }
 
@@ -940,40 +1108,6 @@
     color: var(--success-badge-text);
   }
 
-  .commit-head {
-    display: grid;
-    gap: 6px;
-    padding: 14px 12px 12px 18px;
-    border-bottom: 1px solid var(--files-line);
-
-    h2 {
-      font-size: 16px;
-      line-height: 22px;
-    }
-
-    .body {
-      max-height: 120px;
-      overflow: auto;
-      color: var(--text-secondary);
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 4px 12px;
-      color: var(--text-secondary);
-      font-size: 12.5px;
-    }
-
-    .seg button {
-      padding: 4px 10px;
-      font-size: 12.5px;
-    }
-  }
-
   .commit-body {
     display: flex;
     flex: 1;
@@ -990,112 +1124,171 @@
     }
   }
 
-  .back {
-    display: none;
-    margin-right: 10px;
-    color: var(--text-secondary);
-    font-size: 14px;
-    text-decoration: none;
-  }
-
   @container deck (max-width: 1100px) {
     .commit-body > .tree {
       display: none;
     }
   }
 
-  @container deck (max-width: 759px) {
-    .bench {
-      height: max(480px, calc(100dvh - 150px));
-    }
-
-    .bench-bar {
-      flex-direction: column;
-      gap: 0;
-      padding: 0;
-    }
-
-    .repo-tabs {
-      min-height: 44px;
-      padding: 0 4px;
-      border-bottom: 1px solid var(--files-line);
-    }
-
-    .bench-tools {
-      justify-content: space-between;
-      padding: 8px 10px;
-    }
-
-    .bench-tools {
-      gap: 8px;
-    }
-
-    .checkout-button {
-      min-width: 0;
-      max-width: 40vw;
+  @container deck (max-width: 979px) {
+    .views a {
+      padding: 0 8px;
     }
 
     .checkout-branch {
       display: none;
     }
+  }
 
-    .views a {
-      padding: 4px 8px;
+  // Narrow: the tree is a drawer over the open view; the second bar keeps what's open and its
+  // controls on one line, with the facts on a quieter line under it.
+
+  @container deck (max-width: 759px) {
+    .files-head {
+      flex-wrap: nowrap;
+      gap: 10px;
+
+      h1 {
+        font-size: 24px;
+      }
     }
 
-    .ship-actions .seg,
-    .commit-head .seg,
-    .file-head .seg[aria-label='Diff layout'] {
+    .live-label,
+    .copy-path,
+    .facts .size {
       display: none;
     }
 
-    .bench-grid {
+    .bench {
+      height: max(480px, calc(100dvh - var(--header-height, 60px) - 100px));
+      border-radius: 10px;
+    }
+
+    .bench-bar {
+      gap: 2px;
+      padding: 0 4px;
+    }
+
+    .bench-tools {
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .checkout-button {
+      max-width: 34vw;
+      padding: 0 8px;
+    }
+
+    .views {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .bench-grid,
+    .bench[data-tree='closed'] .bench-grid {
       grid-template-columns: minmax(0, 1fr);
+
+      > .bench-side {
+        display: flex;
+      }
     }
 
     .bench-side {
-      border-right: 0;
+      position: absolute;
+      z-index: 6;
+      inset: 0 auto 0 0;
+      width: min(320px, 86%);
+      border-right: 1px solid var(--files-line);
+      background: var(--deck-surface);
+      transform: translateX(-100%);
+      transition:
+        transform 240ms var(--ease-out-strong),
+        box-shadow 240ms var(--ease-out-strong);
     }
 
-    .bench-grid[data-open='main'] > .bench-side,
-    .bench-grid[data-open='side'] > .bench-main {
+    .scrim {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: block;
+      background: rgb(0 0 0 / 0.28);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 240ms var(--ease-out-strong);
+    }
+
+    .bench[data-tree='open'] {
+      .bench-side {
+        box-shadow: 8px 0 24px rgb(0 0 0 / 0.12);
+        transform: none;
+      }
+
+      .scrim {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+
+    .file-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 2px 8px;
+      padding: 6px 8px 7px 12px;
+    }
+
+    .crumbs,
+    .commit-subject {
+      justify-self: start;
+      max-width: 100%;
+    }
+
+    .summary-line {
+      flex-wrap: wrap;
+      white-space: normal;
+    }
+
+    .facts {
+      grid-column: 1 / -1;
+      flex-wrap: wrap;
+      gap: 2px 10px;
+      font-size: 12px;
+
+      .commit-link {
+        flex: 1 1 100%;
+      }
+    }
+
+    .crumbs + .facts::before,
+    .commit-subject + .facts::before,
+    .summary-line + .facts::before {
       display: none;
     }
 
-    .back {
-      display: inline;
+    .bar-tools {
+      grid-row: 1;
+      grid-column: 2;
     }
 
-    .file-head {
-      flex-wrap: wrap;
-      padding-left: 12px;
+    .bar-tools .seg[aria-label='Diff layout'] {
+      display: none;
     }
 
-    .crumbs {
+    .commit-form {
       flex-basis: 100%;
-    }
-
-    .file-meta {
-      flex-wrap: wrap;
-      padding: 6px 12px;
-
-      .commit-link {
-        flex-basis: 100%;
-      }
+      margin: 4px 0 0;
     }
 
     .md {
       padding: 20px 18px 48px;
       font-size: 15.5px;
     }
+  }
+}
 
-    .commit-form {
-      flex-wrap: wrap;
-
-      input {
-        flex-basis: 100%;
-      }
-    }
+@media (prefers-reduced-motion: reduce) {
+  .files .bench-side,
+  .files .scrim {
+    transition: none;
   }
 }
 
@@ -1110,4 +1303,10 @@
   .files .checkout-menu {
     animation: none;
   }
+}
+
+// Files fills the window and never scrolls under the floating header, so the header's fade would
+// only blur the title and the sheet's top edge.
+.app-shell:has(.deck.files) .top-gradient-blur {
+  display: none;
 }

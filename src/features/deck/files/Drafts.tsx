@@ -7,6 +7,7 @@ import { codeFile, useCodeOptions, useDiffStyle } from '../code/pierre';
 import { Empty, Seg } from '../components';
 import { notify, useAction } from '../actions';
 import type { Draft, FileBody, RepoSummary } from '../types';
+import { BarTools, Side } from './bench';
 import { fileApi, filesUrl, nameFor } from './urls';
 
 /** Proposed files, each read against the live file it would replace. */
@@ -15,8 +16,8 @@ export function Drafts({ drafts, name, repos }: { drafts: Draft[]; name: string;
   const repoName = (id: string) => repos.find((r) => r.id === id)?.name ?? id;
 
   return (
-    <div className="bench-grid drafts" data-open={name ? 'main' : 'side'}>
-      <aside className="bench-side">
+    <div className="bench-grid drafts">
+      <Side>
         <ol className="commit-list">
           {drafts.map((d) => (
             <li key={d.name}>
@@ -29,7 +30,7 @@ export function Drafts({ drafts, name, repos }: { drafts: Draft[]; name: string;
             </li>
           ))}
         </ol>
-      </aside>
+      </Side>
       <div className="bench-main">
         {draft ? (
           <DraftView key={draft.name} draft={draft} repos={repos} />
@@ -82,37 +83,37 @@ function DraftView({ draft, repos }: { draft: Draft; repos: RepoSummary[] }) {
 
   return (
     <div className="viewer">
-      <div className="file-head">
-        <nav className="crumbs" aria-label="Path">
-          <Link className="back" to={filesUrl.drafts()} aria-label="Back to drafts">
-            ←
-          </Link>
+      <div className="file-bar">
+        <nav className="crumbs" aria-label="Draft">
           <b>{draft.name}</b>
-          {target && repo && (
-            <span className="muted small clip">
+        </nav>
+        <div className="facts">
+          {target && repo ? (
+            <span className="clip">
               against {repo.name}/{target.path}
             </span>
+          ) : (
+            <span>No live file mapped</span>
           )}
-        </nav>
-        <span className="spacer" />
-        {files.current && (
-          <Seg
-            label="Diff layout"
-            value={style}
-            options={[
-              ['unified', 'Unified'],
-              ['split', 'Split'],
-            ]}
-            onChange={setStyle}
-          />
-        )}
-        {target && repo ? (
-          <Button size="sm" loading={busy === 'take'} onClick={take}>
-            Take into a worktree
-          </Button>
-        ) : (
-          <span className="muted small">No live file mapped</span>
-        )}
+        </div>
+        <BarTools>
+          {files.current && (
+            <Seg
+              label="Diff layout"
+              value={style}
+              options={[
+                ['unified', 'Unified'],
+                ['split', 'Split'],
+              ]}
+              onChange={setStyle}
+            />
+          )}
+          {target && repo && (
+            <Button size="sm" loading={busy === 'take'} onClick={take}>
+              Take into a worktree
+            </Button>
+          )}
+        </BarTools>
       </div>
       <Virtualizer className="code">
         {files.current ? (

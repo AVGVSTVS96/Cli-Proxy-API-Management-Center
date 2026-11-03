@@ -29,10 +29,29 @@ export function langOf(name: string): SupportedLanguages {
   return (bundled.has(canonical) ? canonical : 'text') as SupportedLanguages;
 }
 
+const INTERPRETERS: [RegExp, SupportedLanguages][] = [
+  [/\b(bun|node|deno|tsx|ts-node)\b/, 'typescript'],
+  [/\bpython[0-9.]*\b/, 'python'],
+  [/\bzsh\b/, 'zsh'],
+  [/\bfish\b/, 'fish'],
+  [/\b(ba|da|k)?sh\b/, 'shellscript'],
+  [/\blua\b/, 'lua'],
+];
+
+/** A script without an extension reads its grammar off the #! line, as bin/ scripts are written. */
+function langOfScript(name: string, contents: string): SupportedLanguages {
+  const lang = langOf(name);
+
+  if (lang !== 'text' || !contents.startsWith('#!')) return lang;
+  const shebang = contents.split('\n', 1)[0];
+
+  return INTERPRETERS.find(([re]) => re.test(shebang))?.[1] ?? 'text';
+}
+
 export const codeFile = (name: string, contents: string, cacheKey?: string): FileContents => ({
   name,
   contents,
-  lang: langOf(name),
+  lang: langOfScript(name, contents),
   cacheKey,
 });
 

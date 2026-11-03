@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { CodeViewItem } from '@pierre/diffs';
 import { CodeView, type CodeViewHandle } from '@pierre/diffs/react';
@@ -8,6 +8,9 @@ import { patchDiffs, useCodeOptions, useDiffStyle } from '../code/pierre';
 import { Empty, Seg } from '../components';
 import { dayOf, fmt, relativeTime } from '../format';
 import type { Commit, CommitDetail, Workspace } from '../types';
+import { notify } from '../actions';
+import { BarTools, Side, useSlashToFind } from './bench';
+import { copy } from './copy';
 import { PathTree } from './PathTree';
 import { filesUrl, wsApi, wsTags } from './urls';
 
@@ -31,11 +34,19 @@ export function History({ ws, sha }: { ws: Workspace; sha: string }) {
   const query = `/commits?limit=${LIMIT}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
   const commits = useDeck<Commit[]>(wsApi(ws.id, query), ...wsTags(ws));
   const picked = sha || commits.data?.[0]?.sha || '';
+  const [filter, setFilter] = useState('');
+  const find = useRef<HTMLInputElement>(null);
+
+  useSlashToFind(true, () => find.current?.focus());
+  const needle = filter.trim().toLowerCase();
 
   const days = useMemo(() => {
     const groups: [string, Commit[]][] = [];
+    const shown = (commits.data ?? []).filter(
+      (c) => !needle || c.subject.toLowerCase().includes(needle) || c.sha.startsWith(needle) || c.author.toLowerCase().includes(needle)
+    );
 
-    for (const c of commits.data ?? []) {
+    for (const c of shown) {
       const name = dayName(c.at);
       const last = groups[groups.length - 1];
 
@@ -44,18 +55,28 @@ export function History({ ws, sha }: { ws: Workspace; sha: string }) {
     }
 
     return groups;
-  }, [commits.data]);
+  }, [commits.data, needle]);
 
   return (
-    <div className="bench-grid history" data-open={sha ? 'main' : 'side'}>
-      <aside className="bench-side">
+    <div className="bench-grid history">
+      <Side>
+        <div className="side-search">
+          <input
+            type="search"
+            ref={find}
+            aria-label="Filter commits"
+            placeholder="Filter commits"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+        </div>
         {path && (
           <div className="history-filter">
             <span className="clip" title={path}>
-              Commits to <b>{path.split('/').pop()}</b>
+              Only <b>{path}</b>
             </span>
-            <Link to={filesUrl.history(ws.id, sha)} aria-label="Show every commit">
-              All
+            <Link to={filesUrl.history(ws.id, sha)} aria-label="Show every commit" title="Show every commit">
+              ×
             </Link>
           </div>
         )}
@@ -65,6 +86,8 @@ export function History({ ws, sha }: { ws: Workspace; sha: string }) {
           <Empty>Reading history…</Empty>
         ) : !commits.data.length ? (
           <Empty>No commits yet.</Empty>
+        ) : !days.length ? (
+          <Empty>No commit matches “{filter.trim()}”.</Empty>
         ) : (
           days.map(([name, list]) => (
             <section key={name} className="day">
@@ -89,7 +112,7 @@ export function History({ ws, sha }: { ws: Workspace; sha: string }) {
             </section>
           ))
         )}
-      </aside>
+      </Side>
       <div className="bench-main">
         {picked ? <CommitView key={picked} ws={ws} sha={picked} focus={path} /> : !commits.data ? null : <Empty>No commits yet.</Empty>}
       </div>
@@ -102,6 +125,7 @@ function CommitView({ ws, sha, focus }: { ws: Workspace; sha: string; focus: str
   const [style, setStyle] = useDiffStyle();
   const options = useCodeOptions(style);
   const view = useRef<CodeViewHandle<undefined, undefined>>(null);
+  const [showBody, setShowBody] = useState(false);
 
   const diffs = useMemo(() => (detail.data ? patchDiffs(detail.data.patch, `${sha}:${style}`) : []), [detail.data, sha, style]);
   const items = useMemo<CodeViewItem<undefined>[]>(
@@ -139,26 +163,38 @@ function CommitView({ ws, sha, focus }: { ws: Workspace; sha: string; focus: str
 
   return (
     <div className="viewer">
-      <div className="commit-head">
-        <Link className="back" to={filesUrl.history(ws.id, '', focus)}>
-          ← History
-        </Link>
-        <h2>{c.subject}</h2>
-        {c.body && <p className="body">{c.body}</p>}
-        <div className="meta">
-          <span>{c.author}</span>
-          <time dateTime={new Date(c.at).toISOString()} title={new Date(c.at).toLocaleString()}>
-            {relativeTime(c.at)}
-          </time>
-          <span className="mono" title={c.sha}>
+      <div className="file-bar commit-bar">
+        <span className="commit-subject" title={c.subject}>
+          {c.subject}
+        </span>
+        <div className="facts">
+          <span className="who">
+            {c.author} ·{' '}
+            <time dateTime={new Date(c.at).toISOString()} title={new Date(c.at).toLocaleString()}>
+              {relativeTime(c.at)}
+            </time>
+          </span>
+          <button
+            type="button"
+            className="sha"
+            title={`Copy ${c.sha}`}
+            onClick={() => void copy(c.sha).then(() => notify(`Copied ${c.short}`))}
+          >
             {c.short}
-          </span>
+          </button>
           {c.signed ? <span className="signed">Signed</span> : <span className="unsigned">Unsigned</span>}
-          <span>
-            {fmt.int(paths.length)} {paths.length === 1 ? 'file' : 'files'}{' '}
-            <span className="plus">+{fmt.int(counts.added)}</span> <span className="minus">−{fmt.int(counts.removed)}</span>
-          </span>
           <span className="spacer" />
+          <span className="num">
+            {fmt.int(paths.length)} {paths.length === 1 ? 'file' : 'files'} <span className="plus">+{fmt.int(counts.added)}</span>{' '}
+            <span className="minus">−{fmt.int(counts.removed)}</span>
+          </span>
+          {c.body && (
+            <button type="button" className="more" aria-expanded={showBody} onClick={() => setShowBody(!showBody)}>
+              {showBody ? 'Less' : 'Message'}
+            </button>
+          )}
+        </div>
+        <BarTools>
           {items.length > 0 && (
             <Seg
               label="Diff layout"
@@ -170,9 +206,10 @@ function CommitView({ ws, sha, focus }: { ws: Workspace; sha: string; focus: str
               onChange={setStyle}
             />
           )}
-        </div>
-        {c.truncated && <p className="muted small">This commit's patch is over 2 MB, so only its first files show.</p>}
+        </BarTools>
       </div>
+      {showBody && c.body && <p className="commit-body-text">{c.body}</p>}
+      {c.truncated && <p className="bar-note">This commit's patch is over 2 MB, so only its first files show.</p>}
       {items.length ? (
         <div className={many ? 'commit-body split-files' : 'commit-body'}>
           {many && (
