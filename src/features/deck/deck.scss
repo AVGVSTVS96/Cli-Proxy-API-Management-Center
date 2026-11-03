@@ -8,6 +8,15 @@
   --deck-bad: var(--failure-badge-text);
   --deck-bad-fill: var(--viz-failure);
   --deck-grid: color-mix(in srgb, var(--border-color) 60%, transparent);
+  --deck-surface: #fffefb;
+  --deck-accent: var(--series-0);
+  --deck-accent-soft: color-mix(in srgb, var(--deck-accent) 12%, transparent);
+
+  // The theme's grey primary reads as a disabled button; these pages act in ink.
+  --primary-color: var(--text-primary);
+  --primary-hover: color-mix(in srgb, var(--text-primary) 84%, var(--bg-secondary));
+  --primary-active: color-mix(in srgb, var(--text-primary) 72%, var(--bg-secondary));
+  --primary-contrast: var(--bg-secondary);
 
   container: deck / inline-size;
   display: flex;
@@ -88,7 +97,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--deck-accent);
     outline-offset: 2px;
   }
 
@@ -156,7 +165,7 @@
       }
 
       &[aria-pressed='true'] {
-        background: var(--bg-primary);
+        background: var(--deck-surface);
         color: var(--text-primary);
         box-shadow: 0 1px 3px var(--border-color);
       }
@@ -168,7 +177,7 @@
     overflow: hidden;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    background: var(--bg-primary);
+    background: var(--deck-surface);
   }
 
   .section-head {
@@ -1392,4 +1401,12 @@
       display: none;
     }
   }
+}
+
+[data-theme='dark'] .deck {
+  --deck-surface: var(--bg-primary);
+}
+
+[data-theme='white'] .deck {
+  --deck-surface: #ffffff;
 }
