@@ -29,8 +29,8 @@ export const filesUrl = {
   browse: (ws: string, file = '') =>
     `/files/${encodeURIComponent(ws)}${file ? `/file/${path(file.split('/'))}` : ''}`,
   changes: (ws: string) => `/files/${encodeURIComponent(ws)}/changes`,
-  history: (ws: string, sha = '') =>
-    `/files/${encodeURIComponent(ws)}/history${sha ? `/${sha}` : ''}`,
+  history: (ws: string, sha = '', file = '') =>
+    `/files/${encodeURIComponent(ws)}/history${sha ? `/${sha}` : ''}${file ? `?path=${encodeURIComponent(file)}` : ''}`,
   drafts: (name = '') => `/files/${DRAFTS}${name ? `/${encodeURIComponent(name)}` : ''}`,
 };
 
@@ -38,6 +38,8 @@ export const filesUrl = {
 export const wsApi = (ws: string, rest = '') => `/ws/${encodeURIComponent(ws)}${rest}`;
 
 export const fileApi = (ws: string, file: string) => wsApi(ws, `/file?path=${encodeURIComponent(file)}`);
+
+export const rawApi = (ws: string, file: string) => wsApi(ws, `/raw?path=${encodeURIComponent(file)}`);
 
 /** The tags a workspace's reads refetch on: its own files and its repo's git state. */
 export const wsTags = (ws: { id: string; repo: string }) => [`ws:${ws.id}`, `repo:${ws.repo}`];

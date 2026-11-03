@@ -39,6 +39,15 @@ export const send = <T>(path: string, method: string, body?: Record<string, Json
       : { method }
   );
 
+/** A file's raw bytes, for pictures an <img> can't fetch with the key itself. */
+export async function blob(path: string): Promise<Blob> {
+  const response = await request(path);
+
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error ?? `Request failed (${response.status})`);
+
+  return response.blob();
+}
+
 export const putText = (path: string, text: string) =>
   api<{ ok: true }>(path, { method: 'PUT', headers: { 'content-type': 'text/plain' }, body: text });
 

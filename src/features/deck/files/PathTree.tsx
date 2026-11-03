@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef } from 'react';
-import type { GitStatusEntry } from '@pierre/trees';
+import type { FileTreeRowDecoration, GitStatusEntry } from '@pierre/trees';
 import { FileTree, useFileTree } from '@pierre/trees/react';
 import { Empty } from '../components';
 
@@ -22,27 +22,37 @@ export function PathTree({
   selected,
   onPick,
   open = false,
+  decorate,
+  search = true,
 }: {
   paths: string[] | null;
   status: GitStatusEntry[];
   selected: string;
   onPick: (path: string) => void;
-  /** Start with every folder open, for short lists like a change set. */
-  open?: boolean;
+  /** Start with every folder open, for short lists like a change set, or the folders of these paths. */
+  open?: boolean | string[];
+  /** Text at the end of a file's row, such as its line counts. */
+  decorate?: (path: string) => FileTreeRowDecoration | null;
+  /** A filter box over the tree; worth it past a screenful of files. */
+  search?: boolean;
 }) {
+  const decorations = useRef(decorate);
   const known = useRef<Set<string> | null>(null);
   const pick = useRef(onPick);
   const current = useRef(selected);
-  const startOpen = useEffectEvent((paths: string[]) =>
-    open && paths.length <= OPEN_LIMIT ? [...new Set(paths.flatMap(ancestors))] : ancestors(selected)
-  );
+  const startOpen = useEffectEvent((paths: string[]) => {
+    const shown = Array.isArray(open) ? open : open && paths.length <= OPEN_LIMIT ? paths : [];
+
+    return [...new Set([...shown, selected].flatMap(ancestors))];
+  });
 
   const { model } = useFileTree({
     paths: [],
     flattenEmptyDirectories: true,
     initialExpansion: 'closed',
-    search: true,
+    search,
     density: 'compact',
+    renderRowDecoration: ({ row }) => (row.kind === 'file' ? (decorations.current?.(row.path) ?? null) : null),
     onSelectionChange: (picked) => {
       const path = picked[0];
 
@@ -53,7 +63,8 @@ export function PathTree({
   useEffect(() => {
     pick.current = onPick;
     current.current = selected;
-  }, [onPick, selected]);
+    decorations.current = decorate;
+  }, [onPick, selected, decorate]);
 
   useEffect(() => {
     if (!paths) return;
@@ -78,17 +89,27 @@ export function PathTree({
   }, [model, status]);
 
   useEffect(() => {
-    if (!paths || !selected) return;
+    if (!paths) return;
 
-    const folder = !known.current?.has(selected);
+    const folder = selected !== '' && !known.current?.has(selected);
+    const item = !selected
+      ? null
+      : folder
+        ? (model.getItem(`${selected}/`) ?? model.getItem(selected))
+        : model.getItem(selected);
 
-    for (const dir of [...ancestors(selected), ...(folder ? [selected] : [])]) {
-      const item = model.getItem(dir) ?? model.getItem(`${dir}/`);
-
-      if (item && 'expand' in item && !item.isExpanded()) item.expand();
+    // The URL picks one file: whatever else is still selected would read as a second pick.
+    for (const path of model.getSelectedPaths()) {
+      if (path !== item?.getPath()) model.getItem(path)?.deselect();
     }
 
-    const item = folder ? (model.getItem(`${selected}/`) ?? model.getItem(selected)) : model.getItem(selected);
+    if (!selected) return;
+
+    for (const dir of [...ancestors(selected), ...(folder ? [selected] : [])]) {
+      const parent = model.getItem(dir) ?? model.getItem(`${dir}/`);
+
+      if (parent && 'expand' in parent && !parent.isExpanded()) parent.expand();
+    }
 
     if (item && !item.isSelected()) {
       item.select();

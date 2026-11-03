@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   getFiletypeFromFileName,
   parsePatchFiles,
@@ -48,27 +48,49 @@ export const createEditor: EditorFactory<undefined, undefined> = (type, options,
 
 const THEMES = { light: 'pierre-light', dark: 'pierre-dark' } as const;
 
+export type DiffStyle = 'unified' | 'split';
+
+const STYLE_KEY = 'files.diffStyle';
+
+/** Unified or split diffs, remembered across visits. */
+export function useDiffStyle() {
+  const [style, setStyle] = useState<DiffStyle>(() => (localStorage.getItem(STYLE_KEY) === 'split' ? 'split' : 'unified'));
+
+  const choose = (next: DiffStyle) => {
+    localStorage.setItem(STYLE_KEY, next);
+    setStyle(next);
+  };
+
+  return [style, choose] as const;
+}
+
 /** Code options that follow the dashboard's theme rather than the system's. */
-export function useCodeOptions() {
+export function useCodeOptions(diffStyle: DiffStyle = 'unified') {
   const themeType = useThemeStore((state) => state.resolvedTheme);
 
   return useMemo(() => {
-    const shared = { theme: THEMES, themeType, overflow: 'wrap', preferredHighlighter: 'shiki-js' } as const;
-    const file: FileOptions<undefined, undefined> = { ...shared, disableFileHeader: true };
+    const shared = {
+      theme: THEMES,
+      themeType,
+      overflow: diffStyle === 'split' ? 'scroll' : 'wrap',
+      preferredHighlighter: 'shiki-js',
+      lineHoverHighlight: 'both',
+    } as const;
+    const file: FileOptions<undefined, undefined> = { ...shared, overflow: 'wrap', disableFileHeader: true };
     const diff: FileDiffOptions<undefined, undefined> = {
       ...shared,
       disableFileHeader: true,
-      diffStyle: 'unified',
+      diffStyle,
       lineDiffType: 'word',
     };
     const view: CodeViewReactOptions<undefined, undefined> = {
       ...shared,
-      diffStyle: 'unified',
+      diffStyle,
       lineDiffType: 'word',
       stickyHeaders: true,
       hunkSeparators: 'line-info',
     };
 
     return { file, diff, view };
-  }, [themeType]);
+  }, [themeType, diffStyle]);
 }

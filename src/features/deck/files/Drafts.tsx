@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MultiFileDiff, File, Virtualizer } from '@pierre/diffs/react';
 import { Button } from '@/components/ui/Button';
 import { putText, send, useDeck } from '../api';
-import { codeFile, useCodeOptions } from '../code/pierre';
-import { Empty } from '../components';
+import { codeFile, useCodeOptions, useDiffStyle } from '../code/pierre';
+import { Empty, Seg } from '../components';
 import { notify, useAction } from '../actions';
 import type { Draft, FileBody, RepoSummary } from '../types';
 import { fileApi, filesUrl, nameFor } from './urls';
@@ -23,7 +23,7 @@ export function Drafts({ drafts, name, repos }: { drafts: Draft[]; name: string;
               <Link to={filesUrl.drafts(d.name)} aria-current={d.name === name ? 'true' : undefined}>
                 <span className="subject">{d.name}</span>
                 <span className="meta">
-                  {d.target ? `replaces ${repoName(d.target.repo)}/${d.target.path}` : 'no live file mapped'}
+                  <span className="clip">{d.target ? `replaces ${repoName(d.target.repo)}/${d.target.path}` : 'not tied to a live file'}</span>
                 </span>
               </Link>
             </li>
@@ -36,7 +36,7 @@ export function Drafts({ drafts, name, repos }: { drafts: Draft[]; name: string;
         ) : name ? (
           <Empty>No draft named {name}.</Empty>
         ) : (
-          <Empty>Pick a draft to read it against the live file.</Empty>
+          <Empty>A draft is a proposed version of one of your files. Pick one to read it against the live file it would replace.</Empty>
         )}
       </div>
     </div>
@@ -49,7 +49,8 @@ function DraftView({ draft, repos }: { draft: Draft; repos: RepoSummary[] }) {
   const target = draft.target;
   const repo = repos.find((r) => r.id === target?.repo) ?? null;
   const live = useDeck<FileBody>(target && repo ? fileApi(repo.id, target.path) : null, `repo:${target?.repo}`);
-  const options = useCodeOptions();
+  const [style, setStyle] = useDiffStyle();
+  const options = useCodeOptions(style);
   const { busy, run } = useAction();
   const proposed = text.data?.contents ?? null;
   const current = live.data?.contents ?? null;
@@ -81,17 +82,30 @@ function DraftView({ draft, repos }: { draft: Draft; repos: RepoSummary[] }) {
 
   return (
     <div className="viewer">
-      <div className="viewer-head">
-        <Link className="back" to={filesUrl.drafts()}>
-          ← Drafts
-        </Link>
-        <span className="path">{draft.name}</span>
-        {target && repo && (
-          <span className="muted small clip">
-            against live {repo.name}/{target.path}
-          </span>
-        )}
+      <div className="file-head">
+        <nav className="crumbs" aria-label="Path">
+          <Link className="back" to={filesUrl.drafts()} aria-label="Back to drafts">
+            ←
+          </Link>
+          <b>{draft.name}</b>
+          {target && repo && (
+            <span className="muted small clip">
+              against {repo.name}/{target.path}
+            </span>
+          )}
+        </nav>
         <span className="spacer" />
+        {files.current && (
+          <Seg
+            label="Diff layout"
+            value={style}
+            options={[
+              ['unified', 'Unified'],
+              ['split', 'Split'],
+            ]}
+            onChange={setStyle}
+          />
+        )}
         {target && repo ? (
           <Button size="sm" loading={busy === 'take'} onClick={take}>
             Take into a worktree

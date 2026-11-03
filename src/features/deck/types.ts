@@ -230,14 +230,6 @@ export type Changes = { files: Change[]; dirty: boolean; ahead: number; behind: 
 
 export type WorkspaceDiff = { patch: string; omitted: string[] };
 
-export type FileBody = {
-  path: string;
-  contents: string | null;
-  original: string | null;
-  binary: boolean;
-  tooLarge: boolean;
-};
-
 export type Commit = {
   sha: string;
   short: string;
@@ -245,6 +237,17 @@ export type Commit = {
   author: string;
   at: number;
   signed: boolean;
+};
+
+export type FileBody = {
+  path: string;
+  contents: string | null;
+  original: string | null;
+  binary: boolean;
+  tooLarge: boolean;
+  size: number;
+  /** The newest commit that touched the file; null for one git never committed. */
+  last: Commit | null;
 };
 
 export type CommitDetail = Commit & { body: string; patch: string; truncated?: boolean };

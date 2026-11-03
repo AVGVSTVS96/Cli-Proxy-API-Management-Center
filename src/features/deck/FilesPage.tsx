@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { send, useConnected, useDeck } from './api';
 import { Empty } from './components';
 import { notify, useAction } from './actions';
+import { fmt } from './format';
 import { Browse } from './files/Browse';
 import { Changes } from './files/Changes';
 import { Drafts } from './files/Drafts';
@@ -11,35 +12,33 @@ import { History } from './files/History';
 import { DRAFTS, filesUrl, nameFor, parseFilesRoute, wsApi, wsTags } from './files/urls';
 import type { Changes as ChangeSet, Draft, RepoSummary, Workspace } from './types';
 import './deck.scss';
-import './workspace.scss';
+import './files.scss';
 
-/** hex's repos: browse the live files, edit in worktrees, review, commit and ship; and drafts. */
+type View = 'browse' | 'changes' | 'history';
+
+/** hex's repos: read the live files, edit in worktrees, review, commit and ship; and drafts. */
 export function FilesPage() {
   const route = parseFilesRoute(useParams()['*'] ?? '');
   const repos = useDeck<RepoSummary[]>('/repos', 'repo:', 'ws:');
   const drafts = useDeck<Draft[]>('/drafts', 'drafts');
-  const connected = useConnected();
+  const draftList = drafts.data ?? [];
 
-  if (repos.error) return <Shell connected={connected}><Empty>{repos.error}</Empty></Shell>;
+  if (repos.error) return <Shell><Empty>{repos.error}</Empty></Shell>;
 
-  if (!repos.data) return <Shell connected={connected}><Empty>Reading repos…</Empty></Shell>;
+  if (!repos.data) return <Shell><Empty>Reading repos…</Empty></Shell>;
 
   if (route.view === 'none') {
     const first = repos.data[0];
 
-    if (!first) return <Shell connected={connected}><Empty>No repos are set up. Add them under workspace.repos in the proxy's config.</Empty></Shell>;
+    if (!first) return <Shell><Empty>No repos are set up. Add them under workspace.repos in the proxy's config.</Empty></Shell>;
 
     return <Navigate to={filesUrl.browse(first.id)} replace />;
   }
 
-  const draftList = drafts.data ?? [];
-
   if (route.view === 'drafts') {
     return (
-      <Shell connected={connected} repos={repos.data} drafts={draftList} current={DRAFTS}>
-        <section className="bench">
-          <Drafts drafts={draftList} name={route.name} repos={repos.data} />
-        </section>
+      <Shell repos={repos.data} drafts={draftList} current={DRAFTS}>
+        <Drafts drafts={draftList} name={route.name} repos={repos.data} />
       </Shell>
     );
   }
@@ -49,94 +48,153 @@ export function FilesPage() {
 
   if (!ws || !repo) {
     return (
-      <Shell connected={connected} repos={repos.data} drafts={draftList} current={repo?.id ?? ''}>
+      <Shell repos={repos.data} drafts={draftList} current={repo?.id ?? ''}>
         <Empty>
-          No workspace {route.ws}; it may have been shipped and removed.{' '}
+          No worktree {route.ws}; it may have been shipped and removed.{' '}
           {repo && <Link to={filesUrl.browse(repo.id)}>Open {repo.name}</Link>}
         </Empty>
       </Shell>
     );
   }
 
+  const file = route.view === 'browse' ? route.file : '';
+
   return (
-    <Shell connected={connected} repos={repos.data} drafts={draftList} current={repo.id}>
-      <Checkouts repo={repo} ws={ws} view={route.view} file={route.view === 'browse' ? route.file : ''} />
-      <section className="bench">
-        {route.view === 'browse' && <Browse ws={ws} file={route.file} />}
-        {route.view === 'changes' && <Changes key={ws.id} ws={ws} repo={repo} />}
-        {route.view === 'history' && <History key={ws.id} ws={ws} sha={route.sha} />}
-      </section>
+    <Shell
+      repos={repos.data}
+      drafts={draftList}
+      current={repo.id}
+      tools={<Checkout repo={repo} ws={ws} view={route.view} file={file} />}
+    >
+      {route.view === 'browse' && <Browse ws={ws} repo={repo} file={route.file} />}
+      {route.view === 'changes' && <Changes key={ws.id} ws={ws} repo={repo} />}
+      {route.view === 'history' && <History key={ws.id} ws={ws} sha={route.sha} />}
     </Shell>
   );
 }
 
 function Shell({
-  connected,
   repos = [],
   drafts = [],
   current = '',
+  tools,
   children,
 }: {
-  connected: boolean;
   repos?: RepoSummary[];
   drafts?: Draft[];
   current?: string;
+  tools?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const connected = useConnected();
   const repo = repos.find((r) => r.id === current);
+  const lede =
+    current === DRAFTS
+      ? `${drafts.length} drafts, each read against the live file it would replace`
+      : repo
+        ? repo.about || repo.path
+        : 'hex';
 
   return (
-    <div className="deck workspace files">
+    <div className="deck files">
       <header className="head">
         <div>
           <h1>Files</h1>
-          <p className="lede">
-            {current === DRAFTS ? `${drafts.length} drafts` : repo ? `${repo.name} · ${repo.about || repo.path}` : 'hex'}
-          </p>
+          <p className="lede">{lede}</p>
         </div>
-        <span className="live-state">
+        <span className="live-state" title={connected ? 'Changes on disk show up here as they happen' : undefined}>
           <span className={connected ? 'dot live' : 'dot idle'} />
           {connected ? 'Live' : 'Connecting…'}
         </span>
       </header>
-      {repos.length > 0 && (
-        <nav className="repo-tabs" aria-label="Repos">
-          {repos.map((r) => (
-            <Link key={r.id} to={filesUrl.browse(r.id)} aria-current={r.id === current ? 'page' : undefined}>
-              {r.name}
-              {r.workspaces.length > 1 && <span className="count">{r.workspaces.length - 1}</span>}
-            </Link>
-          ))}
-          {drafts.length > 0 && (
-            <Link to={filesUrl.drafts()} aria-current={current === DRAFTS ? 'page' : undefined}>
-              drafts<span className="count">{drafts.length}</span>
-            </Link>
-          )}
-        </nav>
-      )}
-      {children}
+      <section className="bench">
+        {repos.length > 0 && (
+          <div className="bench-bar">
+            <nav className="repo-tabs" aria-label="Repos">
+              {repos.map((r) => (
+                <Link key={r.id} to={filesUrl.browse(r.id)} aria-current={r.id === current ? 'page' : undefined}>
+                  {r.name}
+                </Link>
+              ))}
+              {drafts.length > 0 && (
+                <Link to={filesUrl.drafts()} aria-current={current === DRAFTS ? 'page' : undefined}>
+                  Drafts<span className="count">{drafts.length}</span>
+                </Link>
+              )}
+            </nav>
+            {tools}
+          </div>
+        )}
+        {children}
+      </section>
     </div>
   );
 }
 
-/** The live checkout and its worktrees, what the open one has pending, and its three views. */
-function Checkouts({
-  repo,
-  ws,
-  view,
-  file,
-}: {
-  repo: RepoSummary;
-  ws: Workspace;
-  view: 'browse' | 'changes' | 'history';
-  file: string;
-}) {
-  const navigate = useNavigate();
+/** Which checkout is open (live or a worktree), a menu to switch or start one, and its three views. */
+function Checkout({ repo, ws, view, file }: { repo: RepoSummary; ws: Workspace; view: View; file: string }) {
   const changes = useDeck<ChangeSet>(wsApi(ws.id, '/changes'), ...wsTags(ws));
-  const [naming, setNaming] = useState<string | null>(null);
-  const { busy, run } = useAction();
+  const [params] = useSearchParams();
   const pending = changes.data?.files.length ?? 0;
   const ahead = changes.data?.ahead ?? 0;
+  const tracked = changes.data?.files.filter((f) => f.status !== 'untracked').length ?? 0;
+
+  return (
+    <div className="bench-tools">
+      <CheckoutMenu repo={repo} ws={ws} view={view} file={file} />
+      <nav className="views" aria-label="View">
+        <Link to={filesUrl.browse(ws.id, file)} aria-current={view === 'browse' ? 'page' : undefined}>
+          Code
+        </Link>
+        <Link
+          to={filesUrl.changes(ws.id)}
+          aria-current={view === 'changes' ? 'page' : undefined}
+          title={pending > tracked ? `${fmt.int(tracked)} changed, ${fmt.int(pending - tracked)} untracked` : undefined}
+        >
+          Changes
+          {pending > 0 && <span className="count">{fmt.tokens(tracked || pending)}</span>}
+          {ahead > 0 && (
+            <span className="count ahead" title="Commits to ship">
+              ↑{ahead}
+            </span>
+          )}
+        </Link>
+        <Link
+          to={filesUrl.history(ws.id, '', view === 'history' ? (params.get('path') ?? '') : '')}
+          aria-current={view === 'history' ? 'page' : undefined}
+        >
+          History
+        </Link>
+      </nav>
+    </div>
+  );
+}
+
+function CheckoutMenu({ repo, ws, view, file }: { repo: RepoSummary; ws: Workspace; view: View; file: string }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [naming, setNaming] = useState<string | null>(null);
+  const { busy, run } = useAction();
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !root.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setNaming(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [open]);
+
   const target = (id: string) =>
     view === 'changes' ? filesUrl.changes(id) : view === 'history' ? filesUrl.history(id) : filesUrl.browse(id, file);
 
@@ -145,62 +203,72 @@ function Checkouts({
       const { id } = await send<{ id: string }>(`/repos/${repo.id}/workspaces`, 'POST', { name });
 
       setNaming(null);
+      setOpen(false);
       notify(`Opened worktree ${id.split('~')[1]} from ${repo.branch ?? 'HEAD'}`);
       navigate(filesUrl.browse(id, file));
     });
 
-  return (
-    <div className="checkouts">
-      <nav className="ws-list" aria-label="Checkouts">
-        {repo.workspaces.map((w) => (
-          <Link key={w.id} to={target(w.id)} aria-current={w.id === ws.id ? 'page' : undefined}>
-            <span className={w.name ? 'mark wt' : 'mark live'} aria-hidden />
-            {w.name ?? `live · ${w.branch ?? 'detached'}`}
-          </Link>
-        ))}
-        {naming === null ? (
-          <button type="button" className="ws-add" onClick={() => setNaming(file ? nameFor(file) : 'edit')}>
-            + Worktree
-          </button>
-        ) : (
-          <form
-            className="ws-new"
-            onSubmit={(e) => {
-              e.preventDefault();
+  const label = (w: Workspace) => w.name ?? 'live';
 
-              if (naming.trim()) void create(naming.trim());
-            }}
-          >
-            <input
-              autoFocus
-              aria-label="Worktree name"
-              value={naming}
-              onChange={(e) => setNaming(e.target.value)}
-              onFocus={(e) => e.target.select()}
-              onKeyDown={(e) => e.key === 'Escape' && setNaming(null)}
-            />
-            <Button size="sm" type="submit" loading={busy === 'new'}>
-              Open
-            </Button>
-            <Button size="sm" variant="ghost" type="button" onClick={() => setNaming(null)}>
-              Cancel
-            </Button>
-          </form>
-        )}
-      </nav>
-      <nav className="seg views" aria-label="View">
-        <Link to={filesUrl.browse(ws.id, file)} aria-current={view === 'browse' ? 'page' : undefined}>
-          Files
-        </Link>
-        <Link to={filesUrl.changes(ws.id)} aria-current={view === 'changes' ? 'page' : undefined}>
-          Changes
-          {pending > 0 && <span className="count">{pending}</span>}
-          {ahead > 0 && <span className="count ahead" title="Commits to ship">↑{ahead}</span>}
-        </Link>
-        <Link to={filesUrl.history(ws.id)} aria-current={view === 'history' ? 'page' : undefined}>
-          History
-        </Link>
-      </nav>
+  return (
+    <div className="checkout" ref={root}>
+      <button
+        type="button"
+        className="checkout-button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <span className={ws.name ? 'mark wt' : 'mark live'} aria-hidden />
+        <span className="checkout-name">{label(ws)}</span>
+        <span className="checkout-branch">{ws.branch ?? 'detached'}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+          <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+        </svg>
+      </button>
+      {open && (
+        <div className="checkout-menu" role="menu">
+          <p className="menu-label">Checkouts of {repo.name}</p>
+          {repo.workspaces.map((w) => (
+            <Link
+              key={w.id}
+              role="menuitem"
+              to={target(w.id)}
+              aria-current={w.id === ws.id ? 'true' : undefined}
+              onClick={() => setOpen(false)}
+            >
+              <span className={w.name ? 'mark wt' : 'mark live'} aria-hidden />
+              <span className="checkout-name">{label(w)}</span>
+              <span className="checkout-branch">{w.name ? `${w.branch} → ${w.base}` : `${w.branch ?? 'detached'} · read-only`}</span>
+            </Link>
+          ))}
+          {naming === null ? (
+            <button type="button" role="menuitem" className="menu-new" onClick={() => setNaming(file ? nameFor(file) : 'edit')}>
+              <span aria-hidden>+</span> New worktree from {repo.branch ?? 'HEAD'}
+            </button>
+          ) : (
+            <form
+              className="menu-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+
+                if (naming.trim()) void create(naming.trim());
+              }}
+            >
+              <input
+                autoFocus
+                aria-label="Worktree name"
+                value={naming}
+                onChange={(e) => setNaming(e.target.value)}
+                onFocus={(e) => e.target.select()}
+              />
+              <Button size="sm" type="submit" loading={busy === 'new'}>
+                Open
+              </Button>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   );
 }

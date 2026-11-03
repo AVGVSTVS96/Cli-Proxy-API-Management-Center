@@ -14,6 +14,8 @@ interface PageTransitionProps {
   getRouteOrder?: (pathname: string) => number | null;
   getTransitionVariant?: (fromPathname: string, toPathname: string) => TransitionVariant;
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  /** Paths that are one page, such as a file and its folder: they swap in place, without a transition. */
+  isSamePage?: (fromPathname: string, toPathname: string) => boolean;
 }
 
 // Premium personality: enter > exit, decelerate-in / accelerate-out.
@@ -63,6 +65,10 @@ type Layer = {
 
 type TransitionDirection = 'forward' | 'backward';
 
+// A typed or pasted URL arrives with the router's 'default' key, the same as the first page load's.
+const keyOf = (location: Location) =>
+  location.key === 'default' ? `default:${location.pathname}${location.search}` : location.key;
+
 type TransitionVariant = 'vertical' | 'ios';
 
 export function PageTransition({
@@ -70,6 +76,7 @@ export function PageTransition({
   getRouteOrder,
   getTransitionVariant,
   scrollContainerRef,
+  isSamePage,
 }: PageTransitionProps) {
   const location = useLocation();
   const currentLayerRef = useRef<HTMLDivElement>(null);
@@ -84,14 +91,14 @@ export function PageTransition({
   const [isAnimating, setIsAnimating] = useState(false);
   const [layers, setLayers] = useState<Layer[]>(() => [
     {
-      key: location.key,
+      key: keyOf(location),
       location,
       status: 'current',
     },
   ]);
   const currentLayer =
     layers.find((layer) => layer.status === 'current') ?? layers[layers.length - 1];
-  const currentLayerKey = currentLayer?.key ?? location.key;
+  const currentLayerKey = currentLayer?.key ?? keyOf(location);
   const currentLayerLocation = currentLayer?.location;
   const currentLayerPathname = currentLayerLocation?.pathname;
 
@@ -103,8 +110,12 @@ export function PageTransition({
 
   useLayoutEffect(() => {
     if (isAnimating) return;
-    if (location.key === currentLayerKey) return;
-    if (currentLayerPathname === location.pathname) {
+    if (keyOf(location) === currentLayerKey && currentLayerLocation === location) return;
+    if (
+      keyOf(location) === currentLayerKey ||
+      currentLayerPathname === location.pathname ||
+      (currentLayerPathname !== undefined && isSamePage?.(currentLayerPathname, location.pathname))
+    ) {
       if (currentLayerLocation !== location) {
         setLayers((prev) =>
           prev.map((layer) => (layer.status === 'current' ? { ...layer, location } : layer))
@@ -117,7 +128,7 @@ export function PageTransition({
     exitScrollOffsetRef.current = exitScrollOffset;
     scrollPositionsRef.current.set(currentLayerKey, exitScrollOffset);
 
-    enterScrollOffsetRef.current = scrollPositionsRef.current.get(location.key) ?? 0;
+    enterScrollOffsetRef.current = scrollPositionsRef.current.get(keyOf(location)) ?? 0;
     const resolveOrderIndex = (pathname?: string) => {
       if (!getRouteOrder || !pathname) return null;
       const index = getRouteOrder(pathname);
@@ -138,7 +149,7 @@ export function PageTransition({
 
     // When using iOS-style stacking, history POP within the same "section" can have equal route order.
     // In that case, prefer treating navigation to an existing layer as a backward (pop) transition.
-    if (nextVariant === 'ios' && layers.some((layer) => layer.key === location.key)) {
+    if (nextVariant === 'ios' && layers.some((layer) => layer.key === keyOf(location))) {
       nextDirection = 'backward';
     }
 
@@ -169,7 +180,7 @@ export function PageTransition({
         .filter((_, idx) => idx !== resolvedCurrentIndex)
         .map((layer): Layer => ({ ...layer, status: 'stacked' }));
 
-      const nextCurrent: Layer = { key: location.key, location, status: 'current' };
+      const nextCurrent: Layer = { key: keyOf(location), location, status: 'current' };
 
       if (!previousCurrent) {
         nextLayersRef.current = [nextCurrent];
@@ -185,7 +196,7 @@ export function PageTransition({
           return [...previousStack, exitingLayer, nextCurrent];
         }
 
-        const targetIndex = prev.findIndex((layer) => layer.key === location.key);
+        const targetIndex = prev.findIndex((layer) => layer.key === keyOf(location));
         if (targetIndex !== -1) {
           const targetStack: Layer[] = prev.slice(0, targetIndex + 1).map((layer, idx): Layer => {
             const isTarget = idx === targetIndex;
@@ -228,6 +239,7 @@ export function PageTransition({
     getTransitionVariant,
     resolveScrollContainer,
     layers,
+    isSamePage,
   ]);
 
   // Run Motion animation when animating starts

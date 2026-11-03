@@ -802,6 +802,13 @@ export function MainLayout() {
     return 'vertical';
   }, []);
 
+  const isSamePage = useCallback((fromPathname: string, toPathname: string) => {
+    const section = (pathname: string) => pathname.split('/')[1] ?? '';
+    const from = section(fromPathname);
+
+    return from === section(toPathname) && (from === 'files' || from === 'executor');
+  }, []);
+
   const handleRefreshAll = async () => {
     clearCache();
     const results = await Promise.allSettled([
@@ -1270,6 +1277,7 @@ export function MainLayout() {
               render={(location) => <MainRoutes location={location} />}
               getRouteOrder={getRouteOrder}
               getTransitionVariant={getTransitionVariant}
+              isSamePage={isSamePage}
               scrollContainerRef={contentRef}
             />
           </main>
