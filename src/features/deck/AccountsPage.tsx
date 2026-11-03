@@ -7,9 +7,10 @@ import { useNotificationStore } from '@/stores';
 import { send, useAccounts, useDeck } from './api';
 import { Steps } from './chart';
 import { Alert, Meter } from './components';
-import { STANDING, fmt, when } from './format';
+import { STANDING, accountHue, fmt, shortAccount, when } from './format';
 import type { Account, AccountsView, Policy, PolicyResult, Pool, UsageView } from './types';
 import './deck.scss';
+import './accounts.scss';
 
 const WEEK = 7 * 86_400_000;
 const SOON = 3 * 86_400_000;
@@ -18,6 +19,7 @@ export function AccountsPage() {
   const { accounts, pool } = useAccounts();
   const view = useDeck<AccountsView>('/accounts', 'accounts');
   const week = useDeck<UsageView>('/usage?range=7d&by=agent&measure=week&limit=200', 'usage');
+  const ids = accounts.map((a) => a.id);
 
   return (
     <div className="deck accounts">
@@ -26,7 +28,7 @@ export function AccountsPage() {
           <h1>Accounts</h1>
           <p className="lede">{pool?.decision ?? 'Waiting for the pool…'}</p>
         </div>
-        <Link className="btn btn-primary" to="/oauth">
+        <Link className="btn btn-primary btn-sm" to="/oauth">
           Add account
         </Link>
       </header>
@@ -43,152 +45,187 @@ export function AccountsPage() {
       {!accounts.length && <EmptyState title="No accounts in the pool yet." />}
       <div className="cards">
         {accounts.map((a) => (
-          <AccountCard key={a.id} account={a} pool={pool} view={view.data} week={week.data} />
+          <AccountCard
+            key={a.id}
+            account={a}
+            hue={accountHue(a.id, ids)}
+            next={a.id === pool?.next}
+            week={week.data}
+          />
         ))}
       </div>
+
+      {accounts.length > 0 && view.data && (
+        <History accounts={accounts} ids={ids} view={view.data} pool={pool} />
+      )}
 
       {pool && <PolicyEditor pool={pool} />}
     </div>
   );
 }
 
+/** Every account's week on one chart, in its own hue, with its five-hour use as a faint companion. */
+function History({
+  accounts,
+  ids,
+  view,
+  pool,
+}: {
+  accounts: Account[];
+  ids: string[];
+  view: AccountsView;
+  pool: Pool | undefined;
+}) {
+  const now = useNow();
+  const lines = accounts.flatMap((a) =>
+    view.history
+      .filter((h) => h.account === a.id && h.points.length)
+      .sort((x, y) => (x.kind === 'week' ? 1 : 0) - (y.kind === 'week' ? 1 : 0))
+      .map((h) => ({
+        key: `${a.id}:${h.kind}`,
+        label: `${shortAccount(a.label)} · ${h.kind === 'week' ? 'week' : '5 hours'}`,
+        color: accountHue(a.id, ids),
+        faint: h.kind === 'fiveHour',
+        end: h.kind === 'week' ? shortAccount(a.label) : undefined,
+        points: h.points,
+      }))
+  );
+  const fiveHourSince = Math.max(
+    0,
+    ...view.history.filter((h) => h.kind === 'fiveHour').map((h) => h.points[h.points.length - 1]?.[0] ?? 0)
+  );
+
+  return (
+    <section className="section history" aria-labelledby="history-title">
+      <div className="section-head">
+        <h2 id="history-title">Limit use, last 7 days</h2>
+        <span className="sub">
+          Solid: the week · faint: five hours
+          {fiveHourSince > 0 && now - fiveHourSince > 86_400_000 &&
+            `, not reported since ${when(fiveHourSince)}`}
+        </span>
+      </div>
+      <div className="pad">
+        <Steps
+          caption="Each account's weekly and five-hour limit use over the last 7 days"
+          from={now - WEEK}
+          to={now}
+          cutoffs={
+            pool
+              ? [
+                  { label: 'Week', value: pool.policy.weeklyCutoff },
+                  { label: '5-hour', value: pool.policy.sessionCutoff },
+                ]
+              : []
+          }
+          lines={lines}
+        />
+      </div>
+    </section>
+  );
+}
+
 function AccountCard({
   account: a,
-  pool,
-  view,
+  hue,
+  next,
   week,
 }: {
   account: Account;
-  pool: Pool | undefined;
-  view: AccountsView | null;
+  hue: string;
+  next: boolean;
   week: UsageView | null;
 }) {
   const now = useNow();
-  const history = view?.history.filter((h) => h.account === a.id) ?? [];
 
   const top = (week?.rows ?? [])
     .map((r) => ({ row: r, points: r.byAccount.find((b) => b.account === a.id)?.week ?? 0 }))
     .filter((t) => t.points > 0)
     .sort((x, y) => y.points - x.points)
     .slice(0, 5);
+  const most = top[0]?.points || 1;
 
   const signedOut = a.standing === 'signed-out';
   const expiring = a.signInUntil !== null && a.signInUntil - now < SOON;
 
   return (
-    <section className="section account" aria-labelledby={`acct-${a.id}`}>
-      <div className="section-head">
-        {a.rank !== null && <span className="rank mono">#{a.rank}</span>}
+    <section
+      className={next ? 'section account next' : 'section account'}
+      data-c={hue}
+      aria-labelledby={`acct-${a.id}`}
+    >
+      <div className="account-head">
+        <i className="hue" aria-hidden />
         <div className="account-name">
-          <h2 id={`acct-${a.id}`}>{a.label}</h2>
+          <h2 id={`acct-${a.id}`} className="clip" title={a.label}>
+            {a.label}
+          </h2>
           <p className="muted small">
             {a.plan}
             {a.since &&
-              ` · subscribed since ${new Date(a.since).toLocaleDateString('en', { dateStyle: 'medium' })}`}
+              ` · since ${new Date(a.since).toLocaleDateString('en', { month: 'short', year: 'numeric' })}`}
           </p>
         </div>
-        <span className="spacer" />
         <span className={`chip standing ${a.standing}`}>{STANDING[a.standing]}</span>
       </div>
-      <div className="pad account-body">
-        <div className="limit-meters">
-          <Meter label="5 hours" window={a.fiveHour} />
-          <Meter label="Week" window={a.week} />
-        </div>
 
-        <dl className="facts">
-          <div>
-            <dt>Seats</dt>
-            <dd>
-              {a.working} working · {a.idle} idle
-            </dd>
-          </div>
-          <div>
-            <dt>Sign-in</dt>
-            <dd className={signedOut || expiring ? 'warn' : undefined}>
-              {signedOut
-                ? 'signed out'
-                : a.signInUntil
-                  ? `good until ${when(a.signInUntil)}`
-                  : 'no expiry known'}
-              {(signedOut || expiring) && (
-                <Link className="btn btn-secondary btn-sm" to="/oauth">
-                  Sign in again
-                </Link>
-              )}
-            </dd>
-          </div>
-          {a.heldResets.map((h) => (
-            <div key={h.kind}>
-              <dt>Held reset</dt>
-              <dd>
-                {h.left} {h.kind} {h.left === 1 ? 'reset' : 'resets'}
-                {h.expiresAt && `, use by ${when(h.expiresAt)}`}
-              </dd>
-            </div>
-          ))}
-          {a.atLimit?.available && (
-            <div>
-              <dt>Reset offer</dt>
-              <dd className="warn">Claude offers a limit reset now</dd>
-            </div>
+      <div className="account-meters">
+        <Meter label="This week" window={a.week} hue={hue} />
+        <Meter label="Five hours" window={a.fiveHour} hue={hue} size="sm" />
+      </div>
+
+      <ul className="facts small">
+        <li>
+          <b>{a.working}</b> working now
+        </li>
+        <li className={signedOut || expiring ? 'warn' : undefined}>
+          {signedOut
+            ? 'Signed out'
+            : a.signInUntil
+              ? `Signed in until ${when(a.signInUntil)}`
+              : 'Sign-in expiry unknown'}
+          {(signedOut || expiring) && (
+            <>
+              {' · '}
+              <Link to="/oauth">Sign in again</Link>
+            </>
           )}
-        </dl>
-        {a.reasons.length > 0 && (
-          <ul className="reasons small">
-            {a.reasons.map((r) => (
-              <li key={r}>{r}</li>
+        </li>
+        {a.heldResets.map((h) => (
+          <li key={h.kind}>
+            Holds {h.left} {h.kind} {h.left === 1 ? 'reset' : 'resets'}
+            {h.expiresAt && `, use by ${when(h.expiresAt)}`}
+          </li>
+        ))}
+        {a.atLimit?.available && <li className="warn">Claude offers a limit reset now</li>}
+      </ul>
+      {a.reasons.length > 0 && <p className="reasons muted small">{a.reasons.join(' ')}</p>}
+
+      <div className="drill">
+        <h3>Where this week went</h3>
+        {top.length ? (
+          <ul className="spend">
+            {top.map(({ row, points }) => (
+              <li key={row.key}>
+                <Link
+                  to={`/usage?range=7d&w.account=${encodeURIComponent(a.id)}&sel=${encodeURIComponent(row.key)}`}
+                  className="clip"
+                  title={`${row.label} · ${row.detail}`}
+                >
+                  {row.label}
+                </Link>
+                <span className="bar" aria-hidden>
+                  <i style={{ width: `${(points / most) * 100}%` }} />
+                </span>
+                <span className="num">{fmt.limit(points)}</span>
+              </li>
             ))}
           </ul>
+        ) : (
+          <p className="muted small">
+            {week ? 'No limit use tied to agents this week.' : 'Reading usage…'}
+          </p>
         )}
-
-        {history.length > 0 && (
-          <Steps
-            caption={`${a.label}: limit use over the last 7 days`}
-            from={now - WEEK}
-            to={now}
-            cutoffs={
-              pool
-                ? [
-                    { label: 'week', value: pool.policy.weeklyCutoff },
-                    { label: '5h', value: pool.policy.sessionCutoff },
-                  ]
-                : []
-            }
-            lines={history.map((h) => ({
-              key: h.kind,
-              label: h.kind === 'week' ? 'Week' : '5 hours',
-              color: h.kind === 'week' ? 'ink' : 'muted',
-              dashed: h.kind === 'fiveHour',
-              points: h.points,
-            }))}
-          />
-        )}
-
-        <div className="drill">
-          <h3>Top agents this week</h3>
-          {top.length ? (
-            <ul className="sessions">
-              {top.map(({ row, points }) => (
-                <li key={row.key}>
-                  <Link
-                    to={`/usage?range=7d&w.account=${encodeURIComponent(a.id)}&sel=${encodeURIComponent(row.key)}`}
-                    className="who clip"
-                  >
-                    <i className="swatch" data-c={row.color} />
-                    {row.label}
-                    <span className="muted small">{row.detail}</span>
-                  </Link>
-                  <span className="num">{fmt.pts(points)} pts</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted small">
-              {week ? 'No week points tied to agents yet.' : 'Reading usage…'}
-            </p>
-          )}
-        </div>
       </div>
     </section>
   );

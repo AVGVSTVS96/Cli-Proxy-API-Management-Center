@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useWidth } from './useWidth';
 import { dayOf, ticks } from './format';
+import './chart.scss';
 
 export type Series = { key: string; label: string; color: number; values: number[] };
 
@@ -213,7 +214,10 @@ export type Line = {
   key: string;
   label: string;
   color: string;
-  dashed?: boolean;
+  /** A quieter companion line, such as an account's five-hour use beside its week. */
+  faint?: boolean;
+  /** Named at the line's end, with its last value. */
+  end?: string;
   points: [at: number, value: number][];
 };
 
@@ -225,13 +229,34 @@ const valueAt = (line: Line, t: number) => {
   return value;
 };
 
+/** Pushes end labels apart so none overlap, keeping each as near its line as it can. */
+function spread(ys: number[], gap: number, min: number, max: number) {
+  const order = ys.map((y, i) => [y, i] as const).sort((a, b) => a[0] - b[0]);
+  const out = [...ys];
+  let last = -Infinity;
+
+  for (const [y, i] of order) {
+    out[i] = Math.max(y, last + gap, min);
+    last = out[i];
+  }
+
+  for (let k = order.length - 1, next = Infinity; k >= 0; k--) {
+    const i = order[k][1];
+
+    out[i] = Math.min(out[i], next - gap, max);
+    next = out[i];
+  }
+
+  return out;
+}
+
 /** Step lines of limit use (0 to 100%) over time, with the policy cutoffs and a crosshair readout. */
 export function Steps({
   lines,
   from,
   to,
   cutoffs,
-  height = 180,
+  height = 220,
   caption,
 }: {
   lines: Line[];
@@ -243,32 +268,40 @@ export function Steps({
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
-  const pad = { ...PAD, left: 40 };
+  const labelled = lines.filter((l) => l.end && l.points.length);
+  const pad = { top: 10, right: labelled.length ? 112 : 12, bottom: 22, left: 36 };
   const plotW = Math.max(0, width - pad.left - pad.right);
   const plotH = height - pad.top - pad.bottom;
   const x = (t: number) => pad.left + ((t - from) / (to - from || 1)) * plotW;
   const y = (v: number) => pad.top + plotH - (Math.min(v, 100) / 100) * plotH;
 
-  const days = Array.from(
-    { length: Math.ceil((to - from) / 86_400_000) },
-    (_, i) => new Date(from).setHours(24, 0, 0, 0) + i * 86_400_000
-  ).filter((t) => t < to);
+  const days: number[] = [];
+
+  for (const d = new Date(from); d.setHours(24, 0, 0, 0) < to; ) days.push(d.getTime());
 
   const step = Math.max(1, Math.ceil(days.length / Math.max(1, Math.floor(plotW / 64))));
   const at = hover === null ? null : from + ((hover - pad.left) / (plotW || 1)) * (to - from);
 
+  const shown = (line: Line) => line.points.filter(([t]) => t >= from && t <= to);
   const path = (line: Line) =>
-    line.points
-      .filter(([t]) => t >= from && t <= to)
+    shown(line)
       .map(
         ([t, v], i, all) =>
           (i === 0 ? `M${x(t)},${y(v)}` : `H${x(t)}V${y(v)}`) +
-          (i === all.length - 1 ? `H${x(to)}` : '')
+          (i === all.length - 1 && !line.faint ? `H${x(to)}` : '')
       )
       .join('');
 
+  const last = (line: Line) => line.points[line.points.length - 1]?.[1] ?? 0;
+  const ends = spread(
+    labelled.map((l) => y(last(l))),
+    15,
+    pad.top + 4,
+    pad.top + plotH
+  );
+
   return (
-    <div className="chart" ref={ref}>
+    <div className="chart steps" ref={ref}>
       {width > 0 && (
         <svg
           width={width}
@@ -278,16 +311,16 @@ export function Steps({
           onPointerMove={(e) => {
             const px = e.clientX - e.currentTarget.getBoundingClientRect().left;
 
-            setHover(px >= pad.left && px <= width - pad.right ? px : null);
+            setHover(px >= pad.left && px <= pad.left + plotW ? px : null);
           }}
           onPointerLeave={() => setHover(null)}
         >
-          {[0, 25, 50, 75, 100].map((t) => (
+          {[0, 50, 100].map((t) => (
             <g key={t}>
               <line
                 className={t === 0 ? 'baseline' : 'gridline'}
                 x1={pad.left}
-                x2={width - pad.right}
+                x2={pad.left + plotW}
                 y1={y(t)}
                 y2={y(t)}
               />
@@ -296,15 +329,23 @@ export function Steps({
               </text>
             </g>
           ))}
-          {cutoffs.map((c) => (
-            <line
-              key={c.label}
-              className="cutoff"
-              x1={pad.left}
-              x2={width - pad.right}
-              y1={y(c.value)}
-              y2={y(c.value)}
-            />
+          {cutoffs.map((c, i) => (
+            <g key={c.label}>
+              <line
+                className="cutoff"
+                x1={pad.left}
+                x2={pad.left + plotW}
+                y1={y(c.value)}
+                y2={y(c.value)}
+              />
+              <text
+                className="tick cutoff-label"
+                x={pad.left + 4}
+                y={y(c.value) + (i % 2 ? 12 : -4)}
+              >
+                {c.label} cutoff {c.value}%
+              </text>
+            </g>
           ))}
           {days.map((t, i) =>
             i % step === 0 ? (
@@ -316,17 +357,21 @@ export function Steps({
           {lines.map((line) => (
             <path
               key={line.key}
+              className={line.faint ? 'step faint' : 'step'}
               d={path(line)}
-              fill="none"
               data-c={line.color}
-              style={{ stroke: 'var(--c)' }}
-              strokeWidth={2}
-              strokeDasharray={line.dashed ? '5 3' : undefined}
-              strokeLinejoin="round"
             />
           ))}
+          {labelled.map((line, i) => (
+            <g key={line.key} data-c={line.color} className="end">
+              <circle cx={x(to)} cy={y(last(line))} r={4} />
+              <text className="end-label" x={x(to) + 10} y={ends[i] + 4}>
+                <tspan className="end-value">{Math.round(last(line))}%</tspan> {line.end}
+              </text>
+            </g>
+          ))}
           {hover !== null && (
-            <line className="baseline" x1={hover} x2={hover} y1={pad.top} y2={pad.top + plotH} />
+            <line className="crosshair" x1={hover} x2={hover} y1={pad.top} y2={pad.top + plotH} />
           )}
         </svg>
       )}
@@ -346,27 +391,16 @@ export function Steps({
           {lines.map((line) => {
             const v = valueAt(line, at);
 
-            return (
+            return v === null ? null : (
               <div key={line.key} className="tip-row" data-c={line.color}>
-                <i />
+                <i className={line.faint ? 'faint' : undefined} />
                 <span className="muted">{line.label}</span>
-                <b>{v === null ? '–' : `${Math.round(v)}%`}</b>
+                <b>{Math.round(v)}%</b>
               </div>
             );
           })}
         </Tip>
       )}
-      <div className="legend">
-        {lines.map((line) => (
-          <span key={line.key} data-c={line.color}>
-            <i className={line.dashed ? 'line-key dash' : 'line-key'} />
-            {line.label}
-          </span>
-        ))}
-        {cutoffs.length > 0 && (
-          <span>┄ cutoffs: {cutoffs.map((c) => `${c.label} ${c.value}%`).join(' · ')}</span>
-        )}
-      </div>
     </div>
   );
 }

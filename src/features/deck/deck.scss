@@ -299,11 +299,29 @@
     --c: var(--text-tertiary);
   }
 
-  // Limit meter: fill, cutoff tick and a caret for time gone.
+  // Limit meter: fill in the account's hue, the cutoff tick and a faint mark for time gone.
 
   .meter {
     display: grid;
-    gap: 4px;
+    gap: 6px;
+
+    &.sm {
+      gap: 4px;
+      font-size: 13px;
+
+      .meter-label b {
+        font-size: 13px;
+      }
+
+      .meter-track {
+        height: 4px;
+      }
+    }
+
+    &.unread .meter-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
   }
 
   .meter-label {
@@ -313,24 +331,38 @@
     gap: 8px;
 
     b {
-      font-family: $font-mono;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 20px;
+      line-height: 24px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
       font-variant-numeric: tabular-nums;
+
+      &.near {
+        color: var(--deck-warn);
+      }
+
+      &.over {
+        color: var(--deck-bad);
+      }
     }
+  }
+
+  .meter:not([data-c]) {
+    --c: var(--text-primary);
   }
 
   .meter-track {
     position: relative;
     height: 8px;
     border-radius: 9999px;
-    background: var(--bg-tertiary);
+    background: color-mix(in srgb, var(--c) 12%, var(--bg-tertiary));
   }
 
   .meter-fill {
     height: 100%;
     border-radius: 9999px;
-    background: var(--text-primary);
+    background: var(--c);
+    transition: width 600ms var(--ease-out-strong);
 
     &.near {
       background: var(--deck-warn-fill);
@@ -353,16 +385,15 @@
 
   .meter-time {
     position: absolute;
-    bottom: -7px;
-    width: 0;
-    height: 0;
-    margin-left: -4px;
-    border: 4px solid transparent;
-    border-bottom-color: var(--text-secondary);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--deck-surface);
+    opacity: 0.9;
   }
 
   .meter-foot {
-    margin-top: 2px;
     color: var(--text-secondary);
     font-size: 12px;
     line-height: 16px;
@@ -1049,150 +1080,6 @@
     background: var(--deck-warn-fill);
   }
 
-  // Accounts.
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
-    gap: 24px;
-  }
-
-  .account {
-    .section-head {
-      align-items: flex-start;
-    }
-
-    .rank {
-      padding-top: 3px;
-      color: var(--text-tertiary);
-    }
-  }
-
-  .account-name {
-    min-width: 0;
-
-    h2 {
-      overflow-wrap: anywhere;
-    }
-  }
-
-  .standing {
-    &.limited,
-    &.signed-out {
-      border-color: var(--failure-badge-border);
-      background: var(--failure-badge-bg);
-      color: var(--failure-badge-text);
-    }
-
-    &.tight {
-      border-color: var(--amber-30);
-      background: var(--amber-10);
-      color: var(--deck-warn);
-    }
-
-    &.next {
-      border-color: var(--success-badge-border);
-      background: var(--success-badge-bg);
-      color: var(--success-badge-text);
-    }
-  }
-
-  .account-body {
-    display: grid;
-    gap: 16px;
-  }
-
-  .facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 8px 16px;
-    margin: 0;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
-
-    dt {
-      color: var(--text-secondary);
-      font-size: 12px;
-    }
-
-    dd {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 4px 8px;
-      margin: 0;
-    }
-  }
-
-  .reasons {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--text-secondary);
-  }
-
-  .head .btn,
-  .facts .btn {
-    text-decoration: none;
-  }
-
-  .policy-fields {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px 24px;
-  }
-
-  .field {
-    display: grid;
-    align-content: start;
-    gap: 4px;
-
-    > span:first-child {
-      font-weight: 500;
-    }
-  }
-
-  .policy-input {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .input {
-      width: 96px;
-      padding: 7px 10px;
-      font-variant-numeric: tabular-nums;
-    }
-  }
-
-  .policy-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-    margin-top: 16px;
-  }
-
-  .changes {
-    margin: 12px 0 0;
-    padding: 12px 16px 12px 32px;
-    border-radius: 8px;
-    background: var(--bg-tertiary);
-  }
-
-  .notes {
-    margin-top: 16px;
-    color: var(--text-secondary);
-
-    summary {
-      color: var(--text-primary);
-      cursor: pointer;
-    }
-
-    ul {
-      margin: 8px 0 0;
-      padding-left: 18px;
-    }
-  }
-
   // Width steps, measured on the page and on the ranking itself rather than the window, so
   // the sidebar, the rail and phones all land on the right layout.
 
@@ -1405,6 +1292,11 @@
 
 [data-theme='dark'] .deck {
   --deck-surface: var(--bg-primary);
+
+  // The theme's dark rule paints every button's text white, which vanishes on an ink button.
+  .btn.btn-primary {
+    color: var(--primary-contrast);
+  }
 }
 
 [data-theme='white'] .deck {

@@ -49,37 +49,62 @@ export function Seg<T extends string>({
   );
 }
 
-/** The one limit meter: used fill, the policy cutoff tick, and a caret for how much of the window has passed. */
-export function Meter({ label, window }: { label: string; window: LimitWindow }) {
+/**
+ * The one limit meter: used fill in the account's hue (amber near the cutoff, red past it), the
+ * cutoff tick, and a faint mark for how much of the window has passed, so pace reads at a glance.
+ * A window Anthropic sends no reading for collapses to one quiet line.
+ */
+export function Meter({
+  label,
+  window,
+  hue,
+  size = 'md',
+}: {
+  label: string;
+  window: LimitWindow;
+  hue?: string;
+  size?: 'md' | 'sm';
+}) {
   const { used, cutoff, resetsAt } = window;
   const elapsed = elapsedAt(window, useNow());
-  const tone = used === null ? '' : used >= cutoff ? 'over' : used >= cutoff - 15 ? 'near' : '';
-  const text = used === null ? 'no reading' : `${Math.round(used)}% used, cutoff ${cutoff}%`;
+
+  if (used === null)
+    return (
+      <div className={`meter ${size} unread`}>
+        <div className="meter-label">
+          <span>{label}</span>
+          <span className="muted">not reported</span>
+        </div>
+      </div>
+    );
+
+  const tone = used >= cutoff ? 'over' : used >= cutoff - 15 ? 'near' : '';
+  const ahead = elapsed !== null && used / 100 - elapsed;
 
   return (
     <div
-      className="meter"
+      className={`meter ${size}`}
       role="meter"
-      aria-valuenow={used ?? undefined}
+      aria-valuenow={used}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
-      aria-valuetext={text}
+      aria-valuetext={`${Math.round(used)}% used, cutoff ${cutoff}%`}
+      data-c={hue}
     >
       <div className="meter-label">
         <span>{label}</span>
-        <b>{used === null ? '–' : `${Math.round(used)}%`}</b>
+        <b className={tone}>{Math.round(used)}%</b>
       </div>
       <div className="meter-track">
-        {used !== null && (
-          <div className={`meter-fill ${tone}`} style={{ width: `${Math.min(used, 100)}%` }} />
-        )}
-        <div className="meter-cut" style={{ left: `${cutoff}%` }} />
+        <div className={`meter-fill ${tone}`} style={{ width: `${Math.min(used, 100)}%` }} />
         {elapsed !== null && <div className="meter-time" style={{ left: `${elapsed * 100}%` }} />}
+        <div className="meter-cut" style={{ left: `${cutoff}%` }} />
       </div>
       <div className="meter-foot">
         {resetsAt ? `Resets ${when(resetsAt)}` : 'No reset time'}
-        {elapsed !== null && ` · ${fmt.pct(elapsed)} gone`}
+        {elapsed !== null && ` · ${fmt.pct(elapsed)} of it gone`}
+        {ahead !== false && ahead > 0.2 && used < cutoff && <span className="warn"> · ahead of pace</span>}
       </div>
     </div>
   );
