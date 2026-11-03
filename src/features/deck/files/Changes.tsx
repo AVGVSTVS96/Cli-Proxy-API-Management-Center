@@ -107,7 +107,7 @@ export function Changes({ ws, repo }: { ws: Workspace; repo: RepoSummary }) {
   const missing = folded ? [...omitted].filter((p) => byPath.get(p)?.status !== 'untracked') : [...omitted];
 
   return (
-    <div className="bench-grid review" data-open="main">
+    <div className="bench-grid review" data-open="main" data-empty={files?.length === 0 ? '' : undefined}>
       <aside className="bench-side">
         <PathTree key={ws.id} paths={paths} status={status} selected={focused} onPick={pick} open={openFolders} decorate={decorate} />
       </aside>
@@ -307,7 +307,7 @@ function ShipBar({
         </Button>
         <Button
           size="sm"
-          variant={changes?.dirty ? 'secondary' : 'primary'}
+          variant={!changes?.dirty && ahead > 0 ? 'primary' : 'secondary'}
           type="button"
           loading={busy === 'ship'}
           disabled={!changes || changes.dirty || ahead === 0}

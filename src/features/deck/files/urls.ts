@@ -52,3 +52,24 @@ export const nameFor = (file: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+
+export const EXTERNAL = /^[a-z][a-z0-9+.-]*:/i;
+
+/** A link's target inside the repo, relative to the file it's written in; null when it leaves the repo. */
+export function resolveLink(from: string, href: string): string | null {
+  if (!href || href.startsWith('#') || EXTERNAL.test(href) || href.startsWith('//')) return null;
+  const [target] = href.split(/[?#]/);
+  const base = href.startsWith('/') ? [] : from.split('/').slice(0, -1);
+  const parts = [...base];
+
+  for (const part of decodeURIComponent(target).split('/')) {
+    if (!part || part === '.') continue;
+
+    if (part === '..') {
+      if (!parts.length) return null;
+      parts.pop();
+    } else parts.push(part);
+  }
+
+  return parts.join('/') || null;
+}

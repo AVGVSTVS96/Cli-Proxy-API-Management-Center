@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { filesUrl, nameFor, parseFilesRoute } from '@/features/deck/files/urls';
+import { filesUrl, nameFor, parseFilesRoute, resolveLink } from '@/features/deck/files/urls';
 
 const parse = (url: string) => parseFilesRoute(url.replace(/^\/files\/?/, ''));
 
@@ -22,4 +22,27 @@ describe('Files routes', () => {
     expect(nameFor('claude/.claude/CLAUDE.md')).toBe('claude-md');
     expect(nameFor('AGENTS.md')).toBe('agents-md');
   });
+});
+
+describe('Markdown links', () => {
+  test('relative links resolve inside the repo, from the linking file', () => {
+
+    expect(resolveLink('instructions/prompting.md', 'architecture.md')).toBe('instructions/architecture.md');
+    expect(resolveLink('instructions/prompting.md', '../AGENTS.md#rules')).toBe('AGENTS.md');
+    expect(resolveLink('a/b.md', '/SOUL.md')).toBe('SOUL.md');
+    expect(resolveLink('a/b.md', './my%20notes.md?raw')).toBe('a/my notes.md');
+  });
+
+  test('links that leave the repo stay ordinary links', () => {
+
+    expect(resolveLink('AGENTS.md', 'https://example.com')).toBeNull();
+    expect(resolveLink('AGENTS.md', 'mailto:x@example.com')).toBeNull();
+    expect(resolveLink('AGENTS.md', '#working')).toBeNull();
+    expect(resolveLink('AGENTS.md', '../outside.md')).toBeNull();
+  });
+});
+
+test('history can follow one file', () => {
+  expect(filesUrl.history('hex', '', 'memory/LOG.txt')).toBe('/files/hex/history?path=memory%2FLOG.txt');
+  expect(parse(filesUrl.history('hex', 'abc123', 'a.md').split('?')[0])).toEqual({ view: 'history', ws: 'hex', sha: 'abc123' });
 });

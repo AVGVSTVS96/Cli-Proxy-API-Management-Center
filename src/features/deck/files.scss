@@ -310,6 +310,14 @@
     min-height: 0;
   }
 
+  .bench-grid[data-empty] {
+    grid-template-columns: minmax(0, 1fr);
+
+    > .bench-side {
+      display: none;
+    }
+  }
+
   .bench-side {
     display: flex;
     flex-direction: column;
@@ -1018,8 +1026,27 @@
       padding: 8px 10px;
     }
 
+    .bench-tools {
+      gap: 8px;
+    }
+
     .checkout-button {
-      max-width: 52vw;
+      min-width: 0;
+      max-width: 40vw;
+    }
+
+    .checkout-branch {
+      display: none;
+    }
+
+    .views a {
+      padding: 4px 8px;
+    }
+
+    .ship-actions .seg,
+    .commit-head .seg,
+    .file-head .seg[aria-label='Diff layout'] {
+      display: none;
     }
 
     .bench-grid {
