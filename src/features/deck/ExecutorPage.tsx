@@ -6,22 +6,54 @@ import { putText, send, useConnected, useDeck } from './api';
 import { codeFile, createEditor, useCodeOptions } from './code/pierre';
 import { Empty } from './components';
 import { ask, notify, useAction } from './actions';
-import { relativeTime } from './format';
 import type { ExecutorApp, ExecutorOverview, ExecutorSource } from './types';
 import './deck.scss';
-import './workspace.scss';
+import './executor.scss';
 
-const behindHost = (app: ExecutorApp, framework: string | null) =>
-  Boolean(app.pinned && framework && app.pinned !== framework);
+const release = (version: string | null) => {
+  const n = version ? /(\d+)$/.exec(version)?.[1] : undefined;
 
-const deployed = (app: ExecutorApp) =>
-  app.deployedAt ? `deployed ${relativeTime(Date.parse(app.deployedAt))}` : 'not deployed';
-
-const accountTone = (app: ExecutorApp, requirement: string) => {
-  const linked = app.accounts.filter((a) => a.requirement === requirement);
-
-  return linked.some((a) => a.health === 'healthy') ? 'live' : linked.length ? 'warn' : 'idle';
+  return n === undefined ? null : Number(n);
 };
+
+/** How many framework releases the app's pinned `apps` is behind what the host runs, or null if unknown. */
+const releasesBehind = (app: ExecutorApp, framework: string | null) => {
+  const pinned = release(app.pinned);
+  const host = release(framework);
+
+  return pinned === null || host === null || !app.pinned || !framework || app.pinned === framework
+    ? null
+    : Math.max(0, host - pinned);
+};
+
+const deployedOn = (app: ExecutorApp) =>
+  app.deployedAt
+    ? new Date(app.deployedAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })
+    : null;
+
+type Health = 'healthy' | 'unchecked' | 'failing' | 'missing';
+
+const healthOf = (account: { health: string | null } | undefined): Health =>
+  !account ? 'missing' : account.health === null ? 'unchecked' : account.health === 'healthy' ? 'healthy' : 'failing';
+
+const HEALTH: Record<Health, string> = {
+  healthy: 'healthy',
+  unchecked: 'no health check',
+  failing: 'failing',
+  missing: 'no account linked',
+};
+
+/** Every account an app needs, one per requirement, with its health. */
+type Need = { requirement: string; label: string | null; health: Health };
+
+const needs = (app: ExecutorApp) =>
+  app.requirements.flatMap((requirement): Need[] => {
+    const linked = app.accounts.filter((a) => a.requirement === requirement);
+
+    return linked.length
+      ? linked.map((a) => ({ requirement, label: a.label, health: healthOf(a) }))
+      : [{ requirement, label: null, health: 'missing' }];
+  });
 
 /** The apps on Executor: what runs, which accounts they reach, and local source against what's deployed. */
 export function ExecutorPage() {
@@ -30,71 +62,120 @@ export function ExecutorPage() {
   const connected = useConnected();
   const data = overview.data;
   const selected = data?.apps.find((a) => a.slug === slug) ?? data?.apps[0] ?? null;
+  const accounts = data?.apps.flatMap(needs) ?? [];
+  const unhealthy = accounts.filter((a) => a.health === 'failing' || a.health === 'missing').length;
+  const behind = data?.apps.filter((a) => releasesBehind(a, data.framework)).length ?? 0;
 
   return (
-    <div className="deck workspace executor">
+    <div className="deck executor">
       <header className="head">
         <div>
           <h1>Executor</h1>
           <p className="lede">
             {data
-              ? `host runs apps@${data.framework ?? '?'} · ${data.apps.length} apps · ${data.apps.filter((a) => a.local).length} with local source`
-              : 'Your Executor apps'}
+              ? [
+                  `${data.apps.length} apps running`,
+                  unhealthy ? `${unhealthy} accounts need you` : 'every account connected',
+                  behind ? `${behind} built on an older apps release` : `host on apps@${data.framework ?? '?'}`,
+                ].join(' · ')
+              : 'Your apps on Executor'}
           </p>
         </div>
-        {data && (
-          <a className="small" href={data.console} target="_blank" rel="noopener noreferrer">
-            Executor console ↗
-          </a>
-        )}
-        <span className="live-state">
-          <span className={connected ? 'dot live' : 'dot idle'} />
-          {connected ? 'Live' : 'Connecting…'}
+        <span className="ex-head-side">
+          <span className="ex-live">
+            <span className={connected ? 'dot live' : 'dot idle'} />
+            {connected ? 'Live' : 'Connecting…'}
+          </span>
+          {data && (
+            <a className="btn btn-secondary btn-sm" href={data.console} target="_blank" rel="noopener noreferrer">
+              Open Executor ↗
+            </a>
+          )}
         </span>
       </header>
       {overview.error && !data && <Empty>{overview.error}</Empty>}
       {!data && !overview.error && <Empty>Asking Executor…</Empty>}
       {data && (
-        <div className="exec-grid" data-open={slug ? 'main' : 'side'}>
-          <nav className="app-list" aria-label="Apps">
+        <>
+          <nav className="ex-apps" aria-label="Apps">
             {data.apps.map((app) => (
-              <Link
+              <AppCard
                 key={app.id}
-                to={`/executor/${app.slug}`}
-                aria-current={app.slug === selected?.slug ? 'page' : undefined}
-              >
-                <span className="app-name">
-                  {app.name}
-                  <span className="mono muted">{app.slug}</span>
-                </span>
-                <span className="app-meta">
-                  {app.requirements.map((req) => (
-                    <span key={req} className={`dot ${accountTone(app, req)}`} title={req} />
-                  ))}
-                  <span>{deployed(app)}</span>
-                  {behindHost(app, data.framework) && <span className="warn">pin behind host</span>}
-                </span>
-              </Link>
+                app={app}
+                framework={data.framework}
+                current={app.slug === selected?.slug}
+              />
             ))}
           </nav>
-          {selected && <AppDetail key={selected.slug} app={selected} framework={data.framework} reload={overview.reload} />}
-        </div>
+          {selected && (
+            <AppDetail key={selected.slug} app={selected} console={data.console} reload={overview.reload} />
+          )}
+        </>
       )}
     </div>
   );
 }
 
+function AppCard({ app, framework, current }: { app: ExecutorApp; framework: string | null; current: boolean }) {
+  const behind = releasesBehind(app, framework);
+  const on = deployedOn(app);
+
+  return (
+    <Link to={`/executor/${app.slug}`} className="ex-app" aria-current={current ? 'page' : undefined}>
+      <div className="ex-app-top">
+        <b>{app.name}</b>
+        <span className="mono muted">{app.slug}</span>
+        <span className="spacer" />
+        <span className={app.activeVersion ? 'ex-state on' : 'ex-state'}>
+          <span className={app.activeVersion ? 'dot live' : 'dot idle'} />
+          {app.activeVersion ? 'Running' : 'Not deployed'}
+        </span>
+      </div>
+      <ul className="ex-needs">
+        {needs(app).map((n) => (
+          <li key={`${n.requirement}:${n.label}`} data-health={n.health}>
+            <span className="ex-health" aria-hidden />
+            <span className="clip">{n.label ?? n.requirement}</span>
+            <span className="muted small">{n.health === 'healthy' ? n.requirement : HEALTH[n.health]}</span>
+          </li>
+        ))}
+      </ul>
+      <dl className="ex-facts">
+        <div>
+          <dt>Deployed</dt>
+          <dd>
+            {on ?? 'never'}
+            {app.versions > 0 && <span className="muted"> · {app.versions === 1 ? '1 version' : `${app.versions} versions`}</span>}
+          </dd>
+        </div>
+        <div>
+          <dt>Source</dt>
+          <dd>{app.local ? 'here, in executor-apps' : 'in Executor'}</dd>
+        </div>
+        {app.pinned && (
+          <div>
+            <dt>Built on</dt>
+            <dd className={behind ? 'ex-behind' : undefined} title={framework ? `The host runs apps@${framework}` : undefined}>
+              apps@{app.pinned.replace(/^0\.0\.1-/, '')}
+              {behind ? ` · ${behind} ${behind === 1 ? 'release' : 'releases'} behind` : ' · current'}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </Link>
+  );
+}
+
 function AppDetail({
   app,
-  framework,
+  console: consoleUrl,
   reload,
 }: {
   app: ExecutorApp;
-  framework: string | null;
+  console: string;
   reload: () => Promise<void>;
 }) {
   const { busy, run } = useAction();
-  const behind = behindHost(app, framework);
 
   const connect = (requirement: string) =>
     run(requirement, async () => {
@@ -106,62 +187,57 @@ function AppDetail({
     });
 
   return (
-    <section className="app-detail">
-      <Link className="back" to="/executor">
-        ← Apps
-      </Link>
-      <div className="section">
+    <div className="ex-detail">
+      <section className="section" aria-labelledby="ex-accounts-title">
         <div className="section-head">
-          <h2>{app.name}</h2>
-          <span className="chip">{app.local ? 'local source' : 'hosted'}</span>
+          <h2 id="ex-accounts-title">{app.name}'s accounts</h2>
+          <span className="sub">Each requirement is a sign-in the app acts through.</span>
         </div>
-        <dl className="app-facts">
-          <div>
-            <dt>Running</dt>
-            <dd>{deployed(app)}</dd>
-          </div>
-          <div>
-            <dt>Versions</dt>
-            <dd>{app.versions}</dd>
-          </div>
-          {app.pinned && (
-            <div>
-              <dt>Pins</dt>
-              <dd className={behind ? 'warn' : ''}>
-                apps@{app.pinned}
-                {behind && ` · host runs ${framework}`}
-              </dd>
-            </div>
-          )}
-        </dl>
-        {app.requirements.length > 0 && (
-          <ul className="reqs">
-            {app.requirements.map((req) => {
-              const linked = app.accounts.filter((a) => a.requirement === req);
+        <ul className="ex-reqs">
+          {app.requirements.map((req) => {
+            const linked = app.accounts.filter((a) => a.requirement === req);
 
-              return (
-                <li key={req}>
-                  <span className={`dot ${accountTone(app, req)}`} />
-                  <span className="mono">{req}</span>
-                  <span className="muted clip" title={linked.map((a) => `${a.label}: ${a.health ?? 'unknown'}`).join('\n')}>
-                    {linked.map((a) => `${a.label}${a.health && a.health !== 'healthy' ? ` (${a.health})` : ''}`).join(', ') ||
-                      'no account linked'}
-                  </span>
-                  <Button size="sm" variant="secondary" loading={busy === req} onClick={() => connect(req)}>
-                    {linked.length ? 'Add account' : 'Connect'}
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+            return (
+              <li key={req}>
+                <span className="mono ex-req">{req}</span>
+                <span className="ex-req-accounts">
+                  {linked.length ? (
+                    linked.map((a) => (
+                      <span key={a.label} data-health={healthOf(a)}>
+                        <span className="ex-health" aria-hidden />
+                        {a.label}
+                        <span className="muted small">{HEALTH[healthOf(a)]}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span data-health="missing">
+                      <span className="ex-health" aria-hidden />
+                      <span className="muted">No account linked yet</span>
+                    </span>
+                  )}
+                </span>
+                <Button size="sm" variant={linked.length ? 'secondary' : 'primary'} loading={busy === req} onClick={() => connect(req)}>
+                  {linked.length ? 'Add another' : 'Connect'}
+                </Button>
+              </li>
+            );
+          })}
+          {!app.requirements.length && <li className="muted">This app signs in to nothing.</li>}
+        </ul>
+      </section>
       {app.local ? (
         <AppSource app={app} reload={reload} />
       ) : (
-        <Empty>{app.name} has no local source here, so it's edited in Executor itself.</Empty>
+        <section className="section ex-hosted">
+          <p>
+            <b>{app.name}</b> has no copy in executor-apps, so its source lives in Executor.{' '}
+            <a href={consoleUrl} target="_blank" rel="noopener noreferrer">
+              Edit it there ↗
+            </a>
+          </p>
+        </section>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -192,22 +268,26 @@ function AppSource({ app, reload }: { app: ExecutorApp; reload: () => Promise<vo
   if (!source.data) return <Empty>Fetching deployed source…</Empty>;
 
   return (
-    <div className="section">
+    <section className="section ex-source" aria-labelledby="ex-source-title">
       <div className="section-head">
-        <h2>Source</h2>
+        <h2 id="ex-source-title">Source</h2>
         <span className="sub">
-          {differ ? `${differ} of ${files.length} files differ from what runs` : `local matches what runs`}
+          {differ
+            ? `${differ} of ${files.length} files here differ from what runs`
+            : `The ${files.length} files in executor-apps/${app.slug} match what runs`}
         </span>
         <span className="spacer" />
-        <Button
-          size="sm"
-          loading={busy === 'deploy'}
-          disabled={!differ || editing !== null}
-          title={editing ? 'Save your edit first' : undefined}
-          onClick={deploy}
-        >
-          {differ ? 'Deploy local source' : 'Up to date'}
-        </Button>
+        {differ > 0 && (
+          <Button
+            size="sm"
+            loading={busy === 'deploy'}
+            disabled={editing !== null}
+            title={editing ? 'Save your edit first' : undefined}
+            onClick={deploy}
+          >
+            Deploy local source
+          </Button>
+        )}
       </div>
       <EditProvider createEditor={createEditor}>
         {files.map((f) => (
@@ -221,7 +301,7 @@ function AppSource({ app, reload }: { app: ExecutorApp; reload: () => Promise<vo
           />
         ))}
       </EditProvider>
-    </div>
+    </section>
   );
 }
 
@@ -243,6 +323,9 @@ function SourceFile({
   const { busy, run } = useAction();
   const local = file.local ?? '';
   const same = file.local === file.deployed;
+  const [open, setOpen] = useState(!same);
+  const shown = open || editing;
+  const lines = local ? local.split('\n').length : 0;
 
   const files = useMemo(
     () => ({
@@ -265,14 +348,18 @@ function SourceFile({
     });
 
   return (
-    <div className="source-file">
-      <div className="viewer-head">
-        <span className={same ? 'dot live' : 'dot warn'} />
-        <span className="path">{file.path}</span>
-        <span className="muted small">
-          {same ? 'same as running' : file.deployed === null ? 'not deployed yet' : 'differs from running'}
-        </span>
-        <span className="spacer" />
+    <div className="ex-file" data-open={shown}>
+      <div className="ex-file-head">
+        <button type="button" className="ex-file-toggle" aria-expanded={shown} onClick={() => setOpen(!open)}>
+          <span className="ex-chevron" aria-hidden>
+            ›
+          </span>
+          <span className="mono ex-file-path">{file.path}</span>
+          <span className={same ? 'ex-file-state' : 'ex-file-state changed'}>
+            {same ? 'same as running' : file.deployed === null ? 'not deployed yet' : 'differs from running'}
+          </span>
+          <span className="muted small">{lines} lines</span>
+        </button>
         {editing ? (
           <Button size="sm" loading={busy === 'save'} onClick={save}>
             Save locally
@@ -280,7 +367,7 @@ function SourceFile({
         ) : (
           <Button
             size="sm"
-            variant="secondary"
+            variant="ghost"
             onClick={() => {
               latest.current = null;
               setEditing(true);
@@ -290,7 +377,7 @@ function SourceFile({
           </Button>
         )}
       </div>
-      {files.deployed && !same ? (
+      {!shown ? null : files.deployed && !same ? (
         <MultiFileDiff
           oldFile={files.deployed}
           newFile={files.local}
