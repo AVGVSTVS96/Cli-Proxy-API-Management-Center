@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { useNow } from '@/hooks/useNow';
 import { send, useConnected, useDeck, useLiveList } from './api';
 import { Empty } from './components';
 import { messageOf, notify } from './actions';
@@ -16,6 +17,8 @@ const CHANNEL_LABEL: Record<string, string> = {
   buzz: 'Buzz',
   voice: 'Voice',
 };
+
+const DAY = 86_400_000;
 
 const label = (name: string) => CHANNEL_LABEL[name] ?? name;
 
@@ -171,6 +174,7 @@ function Wiring({
   const box = useRef<HTMLDivElement>(null);
   const [paths, setPaths] = useState<{ d: string; on: boolean }[]>([]);
   const threads = sessions.filter((s) => s.app);
+  const now = useNow();
 
   useLayoutEffect(() => {
     const root = box.current;
@@ -232,6 +236,7 @@ function Wiring({
           {channels.map((c) => {
             const mine = threads.filter((s) => s.app === c.name);
             const count = (state: LiveSession['state']) => mine.filter((s) => s.state === state).length;
+            const waiting = mine.filter((s) => s.state === 'blocked' && s.since >= now - DAY).length;
             const live = c.state === 'connected';
 
             return (
@@ -249,7 +254,7 @@ function Wiring({
                       <Link to="/live">
                         {plural(mine.length, 'thread')} open
                         {count('working') > 0 && <span> · {count('working')} working</span>}
-                        {count('blocked') > 0 && <span className="pl-waiting"> · {count('blocked')} waiting on you</span>}
+                        {waiting > 0 && <span className="pl-waiting"> · {waiting} waiting on you</span>}
                       </Link>
                     ) : (
                       <span className="muted">connected, no threads open</span>
@@ -266,7 +271,7 @@ function Wiring({
           <b>hex hub</b>
           <span className="muted small">one session per thread</span>
           <span className="pl-hub-count">
-            <span className="num">{threads.length}</span> sessions now
+            <span className="num">{threads.length}</span> thread sessions now
           </span>
         </div>
         <ul className="pl-loads" aria-label="Every session loads">
