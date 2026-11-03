@@ -1,0 +1,386 @@
+// Claude plugins: the wiring map (channels → hub → what a session loads), then each group.
+// The map draws its wires in an SVG measured from the cards; under 720px it stacks without them.
+
+.deck.plugins {
+  container: plugins / inline-size;
+
+  .pl-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .pl-group {
+    scroll-margin-top: 24px;
+  }
+
+  .pl-tag {
+    flex: none;
+    justify-self: start;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 550;
+    line-height: 18px;
+  }
+
+  .pl-source {
+    flex: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--deck-accent);
+    }
+  }
+
+  // The map.
+
+  .pl-map {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(150px, 0.7fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0 56px;
+    padding: 8px 16px 20px;
+  }
+
+  .pl-wires {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+
+    path {
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .on {
+      stroke: color-mix(in srgb, var(--viz-success) 55%, var(--border-primary));
+      stroke-dasharray: 4 5;
+      animation: pl-flow 1.4s linear infinite;
+    }
+
+    .off {
+      stroke: var(--border-primary);
+      stroke-dasharray: 2 4;
+    }
+  }
+
+  @keyframes pl-flow {
+    to {
+      stroke-dashoffset: -9;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pl-wires .on {
+      animation: none;
+    }
+  }
+
+  .pl-channels,
+  .pl-loads {
+    position: relative;
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pl-channel {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--deck-surface);
+
+    &[data-on='false'] {
+      border-style: dashed;
+    }
+  }
+
+  .pl-channel-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pl-channel-meta {
+    margin-top: 2px;
+    padding-left: 16px;
+    font-size: 12px;
+
+    a {
+      color: var(--text-secondary);
+      text-decoration: none;
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  .pl-waiting {
+    color: var(--deck-warn);
+    font-weight: 600;
+  }
+
+  .pl-down {
+    color: var(--deck-bad);
+  }
+
+  .pl-hub {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: 18px 12px;
+    border: 1px solid var(--text-primary);
+    border-radius: 14px;
+    background: var(--deck-surface);
+    text-align: center;
+
+    b {
+      font-size: 15px;
+    }
+  }
+
+  .pl-hub-count {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+
+    .num {
+      color: var(--text-primary);
+      font-size: 20px;
+      font-weight: 650;
+    }
+  }
+
+  .pl-loads-title {
+    padding-left: 2px;
+  }
+
+  .pl-load a {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--deck-surface);
+    font-size: 13px;
+    text-decoration: none;
+    transition: border-color var(--dur-hover) var(--ease-out-strong);
+
+    &:hover {
+      border-color: var(--border-hover);
+    }
+  }
+
+  @container plugins (max-width: 719px) {
+    .pl-map {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .pl-hub {
+      grid-auto-flow: column;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    .pl-hub-count {
+      margin-top: 0;
+    }
+
+    .pl-loads {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      .pl-loads-title {
+        grid-column: 1 / -1;
+      }
+    }
+  }
+
+  // Claude Code plugins: cards with their switch; an on card's switch carries the accent.
+
+  .pl-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0 16px 16px;
+    list-style: none;
+  }
+
+  .pl-card {
+    --primary-color: var(--deck-accent);
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: border-color var(--dur-hover) var(--ease-out-strong);
+
+    &[data-on='true'] {
+      border-color: color-mix(in srgb, var(--deck-accent) 35%, var(--border-color));
+    }
+
+    &[data-on='false'] b {
+      color: var(--text-secondary);
+    }
+
+    p {
+      flex: 1;
+      font-size: 13px;
+      line-height: 18px;
+    }
+  }
+
+  .pl-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pl-card-foot {
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  // Rows: MCP servers, hooks, mods.
+
+  .pl-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pl-row {
+    display: grid;
+    grid-template-columns: 8px minmax(120px, 0.6fr) 3.2em minmax(0, 1.6fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+    min-height: 42px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-color);
+    font-size: 13px;
+
+    &.pl-hook {
+      grid-template-columns: minmax(120px, 0.6fr) 3.2em minmax(0, 1.8fr) auto;
+    }
+  }
+
+  .pl-hook-what {
+    display: grid;
+    min-width: 0;
+  }
+
+  .pl-row-name {
+    font-weight: 550;
+  }
+
+  @container plugins (max-width: 640px) {
+    .pl-row,
+    .pl-row.pl-hook {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+
+      > .mono,
+      > .muted.clip,
+      > .pl-hook-what {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .pl-row:not(.pl-hook) > .muted.small {
+      display: none;
+    }
+  }
+
+  // Skills.
+
+  .pl-skill-bar {
+    padding: 0 16px 12px;
+  }
+
+  .pl-search {
+    width: min(100%, 320px);
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+
+    &:focus-visible {
+      outline: 2px solid var(--deck-accent);
+      outline-offset: 1px;
+    }
+  }
+
+  .pl-skills {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 0 24px;
+    margin: 0;
+    padding: 0 16px 8px;
+    list-style: none;
+
+    li {
+      padding: 10px 0;
+      border-top: 1px solid var(--border-color);
+      min-width: 0;
+    }
+
+    p {
+      display: -webkit-box;
+      margin-top: 2px;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  }
+
+  .pl-skill-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .pl-more {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    background: none;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+}

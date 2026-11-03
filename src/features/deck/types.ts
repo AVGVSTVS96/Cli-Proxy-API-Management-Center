@@ -254,7 +254,7 @@ export type Draft = { name: string; target: { repo: string; path: string } | nul
 export type Plugin = {
   id: string;
   name: string;
-  kind: 'channel' | 'mod' | 'claude';
+  kind: 'channel' | 'mod' | 'claude' | 'mcp' | 'skill' | 'hook';
   version: string | null;
   description: string;
   enabled: boolean | null;
