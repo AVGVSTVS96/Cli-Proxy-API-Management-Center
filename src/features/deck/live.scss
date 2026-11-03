@@ -1,0 +1,400 @@
+// Live: who is waiting on Bassim, what runs now and on which account, and the last day's moves.
+// Rows are a grid rather than a table so one session folds to two lines in a narrow column.
+
+.deck.live {
+  container: live / inline-size;
+
+  .lv-channels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-decoration: none;
+
+    > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .off {
+      color: var(--deck-bad);
+    }
+
+    &:hover > span {
+      color: var(--text-primary);
+    }
+  }
+
+  // Waiting on you: an amber edge, not an alarm; it's a queue to answer.
+
+  .lv-waiting {
+    border-color: var(--amber-30);
+    box-shadow: inset 3px 0 0 var(--amber-color);
+
+    .dot.blocked {
+      border-radius: 50%;
+      background: var(--amber-color);
+    }
+  }
+
+  .lv-stale {
+    border-top: 1px solid var(--border-color);
+
+    summary {
+      padding: 10px 16px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+
+    .lv-row {
+      opacity: 0.75;
+    }
+  }
+
+  .lv-app {
+    flex: none;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 18px;
+  }
+
+  // Session rows.
+
+  .lv-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .lv-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) 3.5em;
+    align-items: center;
+    gap: 2px 16px;
+    min-height: 40px;
+    padding: 6px 16px;
+    border-top: 1px solid var(--border-color);
+    transition: background-color var(--dur-hover) var(--ease-out-strong);
+
+    &:hover {
+      background: color-mix(in srgb, var(--bg-tertiary) 55%, transparent);
+    }
+
+    &[data-state='idle'] .lv-name a {
+      color: var(--text-secondary);
+    }
+  }
+
+  .lv-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+
+    a {
+      font-weight: 550;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+    }
+  }
+
+  .lv-account {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    font-size: 13px;
+
+    .swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+  }
+
+  .lv-folder {
+    font-size: 12px;
+  }
+
+  .lv-since {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .lv-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 14px 16px 6px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    .num {
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    + .lv-rows .lv-row:first-child {
+      border-top: 0;
+    }
+  }
+
+  // Layout: running sessions beside the account load and the day's moves.
+
+  .lv-grid {
+    display: grid;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .lv-side {
+    display: grid;
+    gap: 24px;
+    min-width: 0;
+  }
+
+  @container live (min-width: 1040px) {
+    .lv-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    }
+  }
+
+  @container live (max-width: 720px) {
+    .lv-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+
+      .lv-account,
+      .lv-folder {
+        grid-column: 1;
+        font-size: 12px;
+      }
+
+      .lv-account {
+        padding-left: 16px;
+      }
+
+      .lv-folder {
+        display: none;
+      }
+
+      .lv-since {
+        grid-row: 1;
+        grid-column: 2;
+      }
+    }
+  }
+
+  // Sessions by account.
+
+  .lv-load {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 2px 16px 16px;
+    list-style: none;
+  }
+
+  .lv-load-label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+
+    > .clip {
+      font-weight: 550;
+    }
+  }
+
+  .lv-next,
+  .lv-standing {
+    flex: none;
+    padding: 0 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+
+  .lv-next {
+    background: var(--success-badge-bg);
+    color: var(--success-badge-text);
+  }
+
+  .lv-standing {
+    background: var(--amber-10);
+    color: var(--deck-warn);
+
+    &.limited,
+    &.signed-out {
+      background: var(--failure-badge-bg);
+      color: var(--failure-badge-text);
+    }
+  }
+
+  .lv-load-bar {
+    display: flex;
+    gap: 2px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+
+    span {
+      transition: width 400ms var(--ease-out-strong);
+    }
+
+    .w {
+      background: var(--c);
+    }
+
+    .i {
+      background: color-mix(in srgb, var(--c) 32%, transparent);
+    }
+  }
+
+  // The day's moves, one lane per account.
+
+  .lv-lanes {
+    svg {
+      display: block;
+      overflow: visible;
+    }
+
+    .lv-hour {
+      stroke: var(--deck-grid);
+      stroke-dasharray: 2 3;
+    }
+
+    .lv-lane-base {
+      stroke: var(--border-color);
+    }
+
+    .lv-lane-label {
+      fill: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 550;
+    }
+
+    .lv-axis {
+      fill: var(--text-tertiary);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .lv-lane-count {
+    fill: var(--text-tertiary);
+    font-weight: 400;
+  }
+
+  .lv-bin,
+  .lv-key-bin {
+    fill: color-mix(in srgb, var(--c, var(--text-tertiary)) 70%, transparent);
+    background: color-mix(in srgb, var(--series-0) 70%, transparent);
+  }
+
+  .lv-move,
+  .lv-key-move {
+    fill: var(--text-primary);
+    background: var(--text-primary);
+
+    &.limit,
+    &.over {
+      fill: var(--amber-color);
+      background: var(--amber-color);
+    }
+  }
+
+  .lv-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .lv-key-bin {
+    display: inline-block;
+    width: 8px;
+    height: 10px;
+    border-radius: 1px;
+  }
+
+  .lv-key-move {
+    display: inline-block;
+    width: 8px;
+    height: 6px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+
+  .lv-moves {
+    border-top: 1px solid var(--border-color);
+
+    summary {
+      padding: 10px 16px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+
+    ol {
+      max-height: 360px;
+      margin: 0;
+      padding: 0 16px 8px;
+      overflow-y: auto;
+      list-style: none;
+    }
+
+    li {
+      display: grid;
+      grid-template-columns: 6.5em minmax(0, 1fr);
+      gap: 0 12px;
+      padding: 7px 0;
+      border-top: 1px solid var(--border-color);
+      font-size: 13px;
+    }
+  }
+
+  .lv-path {
+    grid-column: 2;
+    overflow-wrap: anywhere;
+  }
+
+  .lv-cause {
+    color: var(--text-secondary);
+
+    &.limit,
+    &.over {
+      color: var(--deck-warn);
+    }
+  }
+}

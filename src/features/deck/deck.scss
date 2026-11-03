@@ -638,72 +638,6 @@
     }
   }
 
-  .blocked {
-    border-color: var(--failure-badge-border);
-
-    h2 {
-      color: var(--deck-bad);
-    }
-  }
-
-  .older summary {
-    padding: 0 16px 12px;
-    cursor: pointer;
-  }
-
-  .sessions-live {
-    table-layout: fixed;
-
-    td {
-      padding-block: 8px;
-    }
-
-    th:nth-child(1) {
-      width: 34%;
-    }
-
-    th:nth-child(2) {
-      width: 24%;
-    }
-
-    th:nth-child(3) {
-      width: 10%;
-    }
-
-    th:nth-child(5) {
-      width: 13%;
-    }
-
-    td:first-child a {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .moves {
-    margin: 0;
-    padding: 0 16px 8px;
-    list-style: none;
-
-    li {
-      display: grid;
-      grid-template-columns: 7.5em minmax(0, 1fr);
-      gap: 0 12px;
-      padding: 8px 0;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .more {
-      display: block;
-    }
-  }
-
-  .move-path {
-    grid-column: 2;
-    overflow-wrap: anywhere;
-  }
-
   .sdk-mark {
     flex: none;
     padding: 0 4px;
@@ -715,35 +649,6 @@
     font-weight: 600;
     line-height: 15px;
     letter-spacing: 0.02em;
-  }
-
-  .cause {
-    color: var(--text-secondary);
-
-    &.limit,
-    &.over {
-      color: var(--deck-warn);
-    }
-  }
-
-  .lanes .mark,
-  .mark-key {
-    fill: var(--text-tertiary);
-    background: var(--text-tertiary);
-  }
-
-  .lanes .mark.restart,
-  .lanes .mark.early,
-  .mark-key.restart {
-    fill: var(--text-primary);
-    background: var(--text-primary);
-  }
-
-  .lanes .mark.limit,
-  .lanes .mark.over,
-  .mark-key.limit {
-    fill: var(--deck-warn-fill);
-    background: var(--deck-warn-fill);
   }
 
   // Width steps, measured on the page and on the ranking itself rather than the window, so
@@ -758,47 +663,6 @@
 
   @container deck (max-width: 679px) {
     gap: 16px;
-
-    .sessions-live thead {
-      display: none;
-    }
-
-    .sessions-live,
-    .sessions-live tbody {
-      display: block;
-    }
-
-    .sessions-live tr {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px 12px;
-      padding: 10px 16px;
-      border-top: 1px solid var(--border-color);
-    }
-
-    .sessions-live td {
-      padding: 0;
-      border: 0;
-      color: var(--text-secondary);
-    }
-
-    .sessions-live td:first-child,
-    .sessions-live td.folder {
-      flex-basis: 100%;
-    }
-
-    .sessions-live td:first-child {
-      color: var(--text-primary);
-    }
-
-    .sessions-live td.n {
-      margin-left: auto;
-    }
-
-    .sessions-live td.folder {
-      order: 9;
-    }
-
   }
 }
 
