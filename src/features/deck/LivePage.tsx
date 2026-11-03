@@ -3,7 +3,7 @@ import { useNow } from '@/hooks/useNow';
 import { LIVE_ORDER, useAccounts, useDeck, useLiveList } from './api';
 import { Alert, SdkMark, isAgentSdk } from './components';
 import { useWidth } from './useWidth';
-import { STANDING, when } from './format';
+import { STANDING, accountHue, shortAccount, when } from './format';
 import type { Account, AccountsView, LiveSession, Move, MoveCause } from './types';
 import './deck.scss';
 import './live.scss';
@@ -41,17 +41,11 @@ const span = (since: number, now: number) => {
 
 const home = (cwd: string) => cwd.replace(/^\/(home|Users)\/[^/]+/, '~') || '~';
 
-/** The address without the @gmail.com everyone's has; other domains stay, since they tell accounts apart. */
-const shortAccount = (label: string) => label.replace(/@gmail\.com$/, '');
-
-/** Blue, violet, pink, orange: apart from the live green and the warning amber. */
-const HUES = ['0', '6', '4', '1'];
-
-/** Each account keeps one hue wherever it shows, by its place in the sorted ids, not its rank. */
+/** Each account in the hue Accounts and Usage draw it in. */
 function useAccountHues(accounts: Account[]) {
-  const ids = accounts.map((a) => a.id).sort();
+  const ids = accounts.map((a) => a.id);
 
-  return (id: string | null) => (id && ids.includes(id) ? (HUES[ids.indexOf(id) % HUES.length]) : 'muted');
+  return (id: string | null) => (id ? accountHue(id, ids) : 'muted');
 }
 
 export function LivePage() {
