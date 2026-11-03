@@ -137,6 +137,10 @@ export type Account = {
   working: number;
   idle: number;
   heldResets: { kind: string; left: number; expiresAt: number | null }[];
+  /** When the pool spends this account's held reset, or why it keeps it. */
+  resetPlan?: string;
+  /** When the pool spent this account's resets (unix ms), oldest first. */
+  resetsSpent?: number[];
   atLimit: { available: boolean; nextAt: number | null } | null;
 };
 

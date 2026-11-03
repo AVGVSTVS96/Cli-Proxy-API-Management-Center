@@ -197,6 +197,8 @@ function AccountCard({
             {h.expiresAt && `, use by ${when(h.expiresAt)}`}
           </li>
         ))}
+        {a.resetPlan && <li>{a.resetPlan}</li>}
+        {a.resetsSpent?.map((at) => <li key={at}>Pool spent a reset {when(at)}</li>)}
         {a.atLimit?.available && <li className="warn">Claude offers a limit reset now</li>}
       </ul>
       {a.reasons.length > 0 && <p className="reasons muted small">{a.reasons.join(' ')}</p>}
