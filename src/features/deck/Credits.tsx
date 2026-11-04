@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores';
 import { useNow } from '@/hooks/useNow';
 import { useAccounts, useDeck } from './api';
+import { relativeTime } from './format';
 import './credits.scss';
 
 type Credit = {
@@ -16,6 +17,7 @@ type APIGrant = {
   account: string;
   organization: string;
   remaining: number;
+  recorded: number;
   allowance: number;
   monthlyCap: number;
   observedAt: number;
@@ -77,69 +79,77 @@ export function Credits() {
         </p>
       )}
       <div className="credits-grid">
-        {view.data?.api.map((g) => (
-          <article key={g.credentialId}>
-            <div className="credit-label">
-              <h3>{t('credits.api')}</h3>
-              <span className="credit-status">{t('credits.recorded')}</span>
-            </div>
-            <p className="credit-account">
-              {g.organization} · {label(g.account)}
-            </p>
-            <p className="credit-value">
-              {now >= g.expiresAt ? '—' : money(g.remaining)}{' '}
-              <span>{t(now >= g.expiresAt ? 'credits.expired' : 'credits.lastBalance')}</span>
-            </p>
-            <p className="credit-meta">
-              {t('credits.apiGrant', { amount: money(g.allowance), cap: money(g.monthlyCap) })}
-            </p>
-            <dl>
-              <div>
-                <dt>{t('credits.proxyCost')}</dt>
-                <dd>{money(g.proxyUsd)}</dd>
+        {view.data?.api.map((g) => {
+          const expired = now >= g.expiresAt;
+          return (
+            <article key={g.credentialId}>
+              <div className="credit-label">
+                <h3>{t('credits.api')}</h3>
+                {!expired && <span className="credit-status is-live">{t('credits.live')}</span>}
               </div>
-              <div>
-                <dt>{t('credits.requests')}</dt>
-                <dd>{g.requests.toLocaleString()}</dd>
-              </div>
-            </dl>
-            <p className="credit-note">
-              {t('credits.estimate')}
-              {g.unpriced > 0 && ` ${t('credits.unpriced', { count: g.unpriced })}`}
-            </p>
-            <p className="credit-meta">
-              {g.lastRequestAt
-                ? t('credits.lastRequest', { date: stamp(g.lastRequestAt) })
-                : t('credits.noRequests')}
-              <br />
-              {t('credits.expires', { date: calendarDate(g.expiresAt) + ' UTC' })}
-              {g.renewsAt > 0 && <> · {t('credits.next', { date: calendarDate(g.renewsAt) })}</>}
-            </p>
-            <footer>
-              {t('credits.observed', { date: date(g.observedAt) })}
-              <br />
-              {t('credits.noBilling')}{' '}
-              <a
-                href="https://platform.claude.com/settings/billing"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('credits.console')} ↗
-              </a>
-            </footer>
-          </article>
-        ))}
+              <p className="credit-account">
+                {g.organization} · {label(g.account)}
+              </p>
+              <p className="credit-value">
+                {expired ? '—' : money(g.remaining)}{' '}
+                <span>{t(expired ? 'credits.expired' : 'credits.lastBalance')}</span>
+              </p>
+              <p className="credit-meta">
+                {t('credits.apiGrant', { amount: money(g.allowance), cap: money(g.monthlyCap) })}
+              </p>
+              {!expired && (
+                <progress
+                  aria-label={t('credits.apiUsed')}
+                  max={g.allowance}
+                  value={g.allowance - g.remaining}
+                />
+              )}
+              <dl>
+                <div>
+                  <dt>{t('credits.proxyCost')}</dt>
+                  <dd>{money(g.proxyUsd)}</dd>
+                </div>
+                <div>
+                  <dt>{t('credits.requests')}</dt>
+                  <dd>{g.requests.toLocaleString()}</dd>
+                </div>
+              </dl>
+              <p className="credit-note">
+                {t('credits.estimate', { amount: money(g.recorded), date: date(g.observedAt) })}
+                {g.unpriced > 0 && ` ${t('credits.unpriced', { count: g.unpriced })}`}
+              </p>
+              <p className="credit-meta">
+                {g.lastRequestAt
+                  ? t('credits.lastRequest', { when: relativeTime(g.lastRequestAt) })
+                  : t('credits.noRequests')}
+                <br />
+                {t('credits.expires', { date: calendarDate(g.expiresAt) + ' UTC' })}
+                {g.renewsAt > 0 && <> · {t('credits.next', { date: calendarDate(g.renewsAt) })}</>}
+              </p>
+              <footer>
+                {t('credits.noBilling')}{' '}
+                <a
+                  href="https://platform.claude.com/settings/billing"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('credits.console')} ↗
+                </a>
+              </footer>
+            </article>
+          );
+        })}
         {cloud.map((a) => {
           const c: Credit = a.cloud!;
           const expired = c.expiresAt !== null && now >= c.expiresAt;
-          const stale = now - c.sampledAt > 15 * 60_000;
+          const stale = now - c.sampledAt > 10 * 60_000;
           return (
             <article key={a.id}>
               <div className="credit-label">
                 <h3>{t('credits.cloud')}</h3>
-                <span className={`credit-status ${stale ? '' : 'is-live'}`}>
-                  {t(stale ? 'credits.stale' : 'credits.live')}
-                </span>
+                {!stale && !expired && (
+                  <span className="credit-status is-live">{t('credits.live')}</span>
+                )}
               </div>
               <p className="credit-account">{a.label}</p>
               <p className="credit-value">
@@ -167,7 +177,12 @@ export function Credits() {
               <p className="credit-note">
                 {t('credits.cloudRoute')} <code>claude --cloud</code>
               </p>
-              <footer>{t('credits.sampled', { date: stamp(c.sampledAt) })}</footer>
+              <footer>
+                {t(stale ? 'credits.staleAt' : 'credits.sampled', {
+                  when: relativeTime(c.sampledAt),
+                })}{' '}
+                {t('credits.cloudEvery')}
+              </footer>
             </article>
           );
         })}
@@ -198,8 +213,8 @@ export function Credits() {
               <p className="credit-meta">
                 {a.week.sampledAt
                   ? t(
-                      now - a.week.sampledAt > 15 * 60_000 ? 'credits.staleAt' : 'credits.sampled',
-                      { date: stamp(a.week.sampledAt) }
+                      now - a.week.sampledAt > 25 * 60_000 ? 'credits.staleAt' : 'credits.sampled',
+                      { when: relativeTime(a.week.sampledAt) }
                     )
                   : t('credits.waiting')}
               </p>
