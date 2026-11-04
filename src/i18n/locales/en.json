@@ -1,4 +1,8 @@
 {
+  "deck": {
+    "proxy_history": "Proxy request history begins {{since}}; earlier usage without transcripts is missing.",
+    "proxy_history_empty": "Proxy request history has not started; usage without transcripts is missing."
+  },
   "common": {
     "login": "Login",
     "logout": "Logout",

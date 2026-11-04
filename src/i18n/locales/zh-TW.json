@@ -1,4 +1,8 @@
 {
+  "deck": {
+    "proxy_history": "代理請求歷史始於 {{since}}；此前沒有轉錄紀錄的用量未計入。",
+    "proxy_history_empty": "代理請求歷史尚未開始；沒有轉錄紀錄的用量未計入。"
+  },
   "common": {
     "login": "登入",
     "logout": "登出",

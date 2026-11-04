@@ -1,4 +1,8 @@
 {
+  "deck": {
+    "proxy_history": "Proxy istek geçmişi {{since}} itibarıyla başlar; dökümü olmayan önceki kullanım eksiktir.",
+    "proxy_history_empty": "Proxy istek geçmişi henüz başlamadı; dökümü olmayan kullanım eksiktir."
+  },
   "common": {
     "login": "Giriş",
     "logout": "Çıkış",

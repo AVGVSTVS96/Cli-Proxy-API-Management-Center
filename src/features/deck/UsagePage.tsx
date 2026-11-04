@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
@@ -925,6 +926,7 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
 
 /** Where the numbers come from and what they leave out, in one quiet line. */
 function Footer({ view }: { view: UsageView }) {
+  const { t } = useTranslation();
   const { coverage, sources } = view;
   const selected = view.query.where.account;
   const unassigned = coverage.unassigned
@@ -947,6 +949,11 @@ function Footer({ view }: { view: UsageView }) {
           {github.length} GitHub {github.length === 1 ? 'repo' : 'repos'}, newest run {newest ? when(newest) : 'never'}
         </span>
       )}
+      <span>
+        {sources.proxySince
+          ? t('deck.proxy_history', { since: when(sources.proxySince) })
+          : t('deck.proxy_history_empty')}
+      </span>
       <span>Limit readings since {coverage.limitsSince ? when(coverage.limitsSince) : 'never'}</span>
       {unassigned > 0 && <span>{fmt.limit(unassigned)} of weekly limits has no matching session</span>}
       {unnamed > 0 && coverage.totalApiUsd > 0 && (

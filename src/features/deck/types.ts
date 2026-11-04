@@ -108,6 +108,7 @@ export type UsageView = {
   };
   facets: Record<Dimension, { id: string; label: string; count: number }[]>;
   sources: {
+    proxySince: number | null;
     devices: { id: string; label: string; syncedAt: number | null }[];
   };
   agentSdk: AgentSdkUsage;

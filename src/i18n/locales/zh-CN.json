@@ -1,4 +1,8 @@
 {
+  "deck": {
+    "proxy_history": "代理请求历史始于 {{since}}；此前没有转录记录的用量未计入。",
+    "proxy_history_empty": "代理请求历史尚未开始；没有转录记录的用量未计入。"
+  },
   "common": {
     "login": "登录",
     "logout": "登出",

@@ -1,4 +1,8 @@
 {
+  "deck": {
+    "proxy_history": "Lịch sử yêu cầu proxy bắt đầu {{since}}; thiếu mức sử dụng trước đó không có bản ghi.",
+    "proxy_history_empty": "Chưa có lịch sử yêu cầu proxy; thiếu mức sử dụng không có bản ghi."
+  },
   "common": {
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
