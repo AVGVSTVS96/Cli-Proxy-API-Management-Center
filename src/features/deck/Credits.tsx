@@ -12,6 +12,7 @@ type Credit = {
   sampledAt: number;
 };
 type APIGrant = {
+  credentialId: string;
   account: string;
   organization: string;
   remaining: number;
@@ -77,7 +78,7 @@ export function Credits() {
       )}
       <div className="credits-grid">
         {view.data?.api.map((g) => (
-          <article key={g.organization}>
+          <article key={g.credentialId}>
             <div className="credit-label">
               <h3>{t('credits.api')}</h3>
               <span className="credit-status">{t('credits.recorded')}</span>
@@ -111,8 +112,8 @@ export function Credits() {
                 ? t('credits.lastRequest', { date: stamp(g.lastRequestAt) })
                 : t('credits.noRequests')}
               <br />
-              {t('credits.expires', { date: calendarDate(g.expiresAt) + ' UTC' })} ·{' '}
-              {t('credits.next', { date: calendarDate(g.renewsAt) })}
+              {t('credits.expires', { date: calendarDate(g.expiresAt) + ' UTC' })}
+              {g.renewsAt > 0 && <> · {t('credits.next', { date: calendarDate(g.renewsAt) })}</>}
             </p>
             <footer>
               {t('credits.observed', { date: date(g.observedAt) })}
