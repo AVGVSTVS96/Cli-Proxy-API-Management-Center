@@ -1,3 +1,4 @@
+import { Credits } from '@/features/deck/Credits';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -227,6 +228,8 @@ export function DashboardPage() {
         <span className={styles.washTop} />
         <span className={styles.gridWash} />
       </div>
+
+      <Credits />
 
       {/* ---------- Hero ---------- */}
       <section className={styles.hero} ref={heroRef}>

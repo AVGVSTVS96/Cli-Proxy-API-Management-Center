@@ -124,6 +124,14 @@ export type LimitWindow = {
 };
 
 export type Account = {
+  cloud: {
+    limit: number | null;
+    used: number | null;
+    remaining: number | null;
+    expiresAt: number | null;
+    sampledAt: number;
+  } | null;
+
   id: string;
   label: string;
   plan: string;

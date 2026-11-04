@@ -1,0 +1,181 @@
+.claude-credits {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+  .credits-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .credits-heading > span,
+  .credit-account,
+  .credit-meta,
+  .credit-note,
+  footer {
+    color: var(--text-secondary);
+  }
+  .credits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+  article {
+    min-width: 0;
+    padding: 20px;
+    border-inline-end: 1px solid var(--border-color);
+  }
+  article:last-child {
+    border-inline-end: 0;
+  }
+  .credit-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  a {
+    color: inherit;
+    text-underline-offset: 3px;
+  }
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 3px;
+  }
+  .credit-status {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .is-live {
+    color: var(--viz-success);
+  }
+  .credit-account {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  .credit-value {
+    margin-top: 18px;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 550;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+  }
+  .credit-value > span {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .credit-meta {
+    margin-top: 5px;
+    font-size: 12px;
+  }
+  dl {
+    margin: 16px 0 8px;
+    display: grid;
+    gap: 6px;
+  }
+  dl > div,
+  .credit-week > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  dt {
+    color: var(--text-secondary);
+  }
+  dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .credit-note {
+    font-size: 12px;
+    margin: 10px 0;
+  }
+  code {
+    font-size: 12px;
+  }
+  footer {
+    font-size: 11px;
+    margin-top: 16px;
+  }
+  progress {
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin-top: 14px;
+    border: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    accent-color: var(--amber-color);
+  }
+  progress::-webkit-progress-bar {
+    background: var(--bg-tertiary);
+  }
+  progress::-webkit-progress-value {
+    background: var(--amber-color);
+    border-radius: 4px;
+  }
+  progress::-moz-progress-bar {
+    background: var(--amber-color);
+  }
+  .credit-week {
+    margin-top: 16px;
+  }
+  .credit-week > div {
+    font-size: 12px;
+  }
+  .credit-week strong {
+    font-variant-numeric: tabular-nums;
+    font-weight: 550;
+  }
+  .credit-week progress {
+    margin-top: 7px;
+  }
+  button {
+    color: inherit;
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    cursor: pointer;
+    min-height: 32px;
+  }
+  @media (max-width: 700px) {
+    .credits-grid {
+      grid-template-columns: 1fr;
+    }
+    article {
+      border-inline-end: 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    article:last-child {
+      border-bottom: 0;
+    }
+  }
+}

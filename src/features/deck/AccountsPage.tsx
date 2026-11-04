@@ -1,3 +1,4 @@
+import { Credits } from './Credits';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +33,8 @@ export function AccountsPage() {
           Add account
         </Link>
       </header>
+
+      <Credits />
 
       {view.error && <Alert>Account history could not load: {view.error}</Alert>}
       {week.error && (
