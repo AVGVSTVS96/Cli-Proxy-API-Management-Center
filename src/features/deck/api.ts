@@ -78,6 +78,10 @@ function update(path: string, patch: Partial<Entry>) {
 }
 
 function load(path: string) {
+  if (cache.get(path)?.fetching) {
+    stale.add(path);
+    return;
+  }
   const id = ++requests;
 
   latest.set(path, id);
@@ -85,7 +89,12 @@ function load(path: string) {
   update(path, { fetching: true });
 
   return api<unknown>(path).then(
-    (data) => latest.get(path) === id && update(path, { data, error: null, fetching: false }),
+    (data) => {
+      if (latest.get(path) !== id) return;
+      const again = stale.has(path);
+      update(path, { data, error: null, fetching: false });
+      if (again && users.get(path)) void load(path);
+    },
     (error) => {
       if (latest.get(path) !== id) return;
       stale.add(path);
