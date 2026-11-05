@@ -512,7 +512,7 @@ function Timeline({ plans, now }: { plans: Plan[]; now: number }) {
           <span className="tl-track" role="columnheader">
             {days.map((d) => (
               <span key={d} className={d === today.getTime() ? 'tl-day today' : 'tl-day'}>
-                {dayName.format(d)}
+                <span className="dn">{dayName.format(d)}</span>
                 <b>{new Date(d).getDate()}</b>
               </span>
             ))}
@@ -541,7 +541,7 @@ function Timeline({ plans, now }: { plans: Plan[]; now: number }) {
                     className="win ended"
                     style={{ left: x(lastStart), width: width(lastStart, w.start - HOUR * 2) }}
                   >
-                    Ended {dayDate.format(w.start)}
+                    <span className="win-text">Ended {dayDate.format(w.start)}</span>
                   </span>
                 )}
                 <span
@@ -555,9 +555,10 @@ function Timeline({ plans, now }: { plans: Plan[]; now: number }) {
                     />
                   )}
                   <span className="win-label">
-                    {w.limited
-                      ? `${Math.round(w.used)}% · locked until ${when(w.resetsAt)}`
-                      : `${Math.round(w.used)}% used · ${when(w.resetsAt)}`}
+                    {Math.round(w.used)}%
+                    <span className="win-text">
+                      {w.limited ? ` · locked until ${when(w.resetsAt)}` : ` used · ${when(w.resetsAt)}`}
+                    </span>
                   </span>
                   <span className="win-bar">
                     <i style={{ width: `${Math.min(100, w.used)}%` }} />
@@ -567,7 +568,7 @@ function Timeline({ plans, now }: { plans: Plan[]; now: number }) {
                   className="win next"
                   style={{ left: x(w.resetsAt), width: width(w.resetsAt, to) }}
                 >
-                  Next · {dayDate.format(w.resetsAt + WEEK)}
+                  <span className="win-text">Next · {dayDate.format(w.resetsAt + WEEK)}</span>
                 </span>
               </span>
             </div>

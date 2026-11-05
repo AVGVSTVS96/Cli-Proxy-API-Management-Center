@@ -902,22 +902,43 @@
     }
 
     .tl {
-      --who: 92px;
+      --who: 0px;
+    }
+
+    .tl-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tl-head .tl-who,
+    .tl-day .dn,
+    .win-text {
+      display: none;
     }
 
     .tl-who {
-      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 10px 0;
+      border-right: 0;
+    }
 
-      .chips {
-        display: none;
-      }
+    .tl-now {
+      top: 22px;
+    }
+
+    .tl-track {
+      min-height: 52px;
     }
 
     .tl-day {
-      font-size: 10px;
+      font-size: 11px;
     }
 
     .win {
+      top: 10px;
+      bottom: 10px;
       font-size: 11px;
       padding: 0 6px;
     }
