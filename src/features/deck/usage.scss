@@ -1,4 +1,4 @@
-// Usage: filters, the overview (headline, activity and limits now), then the ranking.
+// Usage: filters, the overview (headline and activity), then the ranking.
 
 .deck.usage {
   // Filters.
@@ -109,11 +109,11 @@
     background: var(--deck-accent-soft);
   }
 
-  // The overview: the range's headline and its activity, with each account's week beside them.
+  // The overview: the range's headline and its activity.
 
   .overview {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .overview-main {
@@ -169,76 +169,6 @@
       line-height: 22px;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-    }
-  }
-
-  .limits-now {
-    display: grid;
-    align-content: start;
-    gap: 4px;
-    padding: 16px;
-    border-left: 1px solid var(--border-color);
-  }
-
-  .limits-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 0 8px 4px;
-
-    h2 {
-      font-size: 13px;
-      line-height: 20px;
-      font-weight: 600;
-    }
-
-    a {
-      color: var(--text-secondary);
-      font-size: 12px;
-      text-decoration: none;
-
-      &:hover {
-        color: var(--deck-accent);
-      }
-    }
-  }
-
-  .limit-pick {
-    display: grid;
-    gap: 8px;
-    padding: 10px 8px;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition: background var(--dur-hover) var(--ease-out-strong);
-
-    &:hover {
-      background: var(--bg-tertiary);
-    }
-
-    &[aria-pressed='true'] {
-      border-color: color-mix(in srgb, var(--deck-accent) 40%, transparent);
-      background: var(--deck-accent-soft);
-    }
-
-    .meter-foot {
-      font-size: 11px;
-    }
-  }
-
-  .limit-name {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    font-size: 13px;
-
-    b {
-      font-weight: 600;
     }
   }
 
@@ -445,15 +375,6 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .limits-now {
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      border-top: 1px solid var(--border-color);
-      border-left: 0;
-
-      .limits-head {
-        grid-column: 1 / -1;
-      }
-    }
   }
 
   @container deck (max-width: 679px) {

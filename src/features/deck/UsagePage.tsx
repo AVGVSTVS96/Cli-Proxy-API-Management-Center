@@ -8,8 +8,8 @@ import { useNow } from '@/hooks/useNow';
 import { useNotificationStore } from '@/stores';
 import { LIVE_ORDER, api, useAccounts, useDeck, useLiveList, useParams } from './api';
 import { Columns, Spark } from './chart';
-import { Alert, Meter, SdkMark, Seg } from './components';
-import { STANDING, fmt, shortAccount, when } from './format';
+import { Alert, SdkMark, Seg } from './components';
+import { fmt, shortAccount, when } from './format';
 import type {
   AgentSdkUsage,
   Bucket,
@@ -256,7 +256,6 @@ export function UsagePage() {
             />
           </div>
         </div>
-        <LimitsNow selected={state.where.find(([d]) => d === 'account')?.[1] ?? []} />
       </section>
 
       <section
@@ -736,48 +735,6 @@ function Ranking({
         </Button>
       )}
     </div>
-  );
-}
-
-/** Each account's week now; picking one filters the page to its usage. */
-function LimitsNow({ selected }: { selected: readonly string[] }) {
-  const [, setParams] = useParams();
-  const { accounts, pool } = useAccounts();
-
-  return (
-    <aside className="limits-now" aria-labelledby="limits-title">
-      <div className="limits-head">
-        <h2 id="limits-title">Limits now</h2>
-        <Link to="/accounts">Accounts →</Link>
-      </div>
-      {!accounts.length && <p className="muted small">No account readings yet.</p>}
-      {accounts.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          className="limit-pick"
-          aria-pressed={selected.includes(a.id)}
-          title={`Show only ${a.label}'s usage`}
-          onClick={() =>
-            setParams({
-              'w.account': selected.length === 1 && selected[0] === a.id ? null : a.id,
-              sel: null,
-            })
-          }
-        >
-          <span className="limit-name">
-            <b className="clip">{a.label}</b>
-            {a.id === pool?.next ? (
-              <span className="chip next">next</span>
-            ) : (
-              a.standing !== 'open' && <span className="muted small">{STANDING[a.standing]}</span>
-            )}
-          </span>
-          <Meter label="Week" window={a.week} size="sm" />
-          {a.fiveHour.used !== null && <Meter label="5 hours" window={a.fiveHour} size="sm" />}
-        </button>
-      ))}
-    </aside>
   );
 }
 

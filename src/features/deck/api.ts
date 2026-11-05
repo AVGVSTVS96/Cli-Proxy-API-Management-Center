@@ -98,6 +98,7 @@ function load(path: string) {
 
   latest.set(path, id);
   stale.delete(path);
+  loadedAt.set(path, Date.now());
   update(path, { fetching: true });
 
   return api<unknown>(path).then(
@@ -119,12 +120,30 @@ function load(path: string) {
 const tagged = (tags: string[], tag: string) =>
   tags.some((t) => t === tag || (t.endsWith(':') && tag.startsWith(t)));
 
+const REFETCH_GAP = 30_000;
+const loadedAt = new Map<string, number>();
+const queued = new Set<string>();
+
+/** A shown path refetches at most once per gap, so steady traffic doesn't refetch on every change. */
+function refetch(path: string) {
+  if (queued.has(path)) return;
+  const wait = (loadedAt.get(path) ?? 0) + REFETCH_GAP - Date.now();
+  if (wait <= 0) return void load(path);
+
+  queued.add(path);
+  stale.add(path);
+  setTimeout(() => {
+    queued.delete(path);
+    if (users.get(path) && stale.has(path)) void load(path);
+  }, wait);
+}
+
 /** Shown paths refetch now; the rest refetch the next time a page shows them. */
 function invalidate(match: (tags: string[]) => boolean) {
   for (const [path, entry] of cache) {
     if (!match(entry.tags)) continue;
 
-    if (users.get(path)) void load(path);
+    if (users.get(path)) refetch(path);
     else stale.add(path);
   }
 }
