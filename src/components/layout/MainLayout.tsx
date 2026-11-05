@@ -619,7 +619,6 @@ export function MainLayout() {
           metaKey: 'nav_meta.dashboard',
           icon: sidebarIcons.dashboard,
         },
-        ...(!isApiKeyFunConfigured ? [quickStartNavItem] : []),
       ],
     },
     {
@@ -642,12 +641,6 @@ export function MainLayout() {
               ? t('sidebar.auth_files_count', { count: authFilesCount })
               : undefined,
           icon: sidebarIcons.authFiles,
-        },
-        {
-          path: '/oauth',
-          labelKey: 'nav.oauth',
-          metaKey: 'nav_meta.oauth',
-          icon: sidebarIcons.oauth,
         },
         {
           path: '/routing',
@@ -679,12 +672,6 @@ export function MainLayout() {
           labelKey: 'nav.accounts',
           metaKey: 'nav_meta.accounts',
           icon: sidebarIcons.accounts,
-        },
-        {
-          path: '/quota',
-          labelKey: 'nav.quota_management',
-          metaKey: 'nav_meta.quota_management',
-          icon: sidebarIcons.quota,
         },
         {
           path: '/logs',
