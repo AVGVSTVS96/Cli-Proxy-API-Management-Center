@@ -22,7 +22,6 @@
     font-weight: 600;
     letter-spacing: -0.02em;
   }
-  .credits-heading > span,
   .credit-account,
   .credit-meta,
   .credit-note,
@@ -71,13 +70,6 @@
   button:focus-visible {
     outline: 2px solid var(--text-primary);
     outline-offset: 3px;
-  }
-  .credit-status {
-    font-size: 11px;
-    color: var(--text-secondary);
-  }
-  .is-live {
-    color: var(--viz-success);
   }
   .credit-account {
     font-size: 12px;

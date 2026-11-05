@@ -189,13 +189,9 @@ function AccountCard({
         <li>
           <b>{a.working}</b> working now
         </li>
-        {!a.credit && (
+        {!a.credit && (signedOut || a.signInUntil !== null) && (
           <li className={signedOut || expiring ? 'warn' : undefined}>
-            {signedOut
-              ? 'Signed out'
-              : a.signInUntil
-                ? `Signed in until ${when(a.signInUntil)}`
-                : 'Sign-in expiry unknown'}
+            {signedOut ? 'Signed out' : `Signed in until ${when(a.signInUntil!)}`}
             {(signedOut || expiring) && (
               <>
                 {' · '}
@@ -218,32 +214,34 @@ function AccountCard({
       </ul>
       {a.reasons.length > 0 && <p className="reasons muted small">{a.reasons.join(' ')}</p>}
 
-      <div className="drill">
-        <h3>Where this week went</h3>
-        {top.length ? (
-          <ul className="spend">
-            {top.map(({ row, points }) => (
-              <li key={row.key}>
-                <Link
-                  to={`/usage?range=7d&w.account=${encodeURIComponent(a.id)}&sel=${encodeURIComponent(row.key)}`}
-                  className="clip"
-                  title={`${row.label} · ${row.detail}`}
-                >
-                  {row.label}
-                </Link>
-                <span className="bar" aria-hidden>
-                  <i style={{ width: `${(points / most) * 100}%` }} />
-                </span>
-                <span className="num">{fmt.limit(points)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted small">
-            {week ? 'No limit use tied to agents this week.' : 'Reading usage…'}
-          </p>
-        )}
-      </div>
+      {!a.credit && (
+        <div className="drill">
+          <h3>Where this week went</h3>
+          {top.length ? (
+            <ul className="spend">
+              {top.map(({ row, points }) => (
+                <li key={row.key}>
+                  <Link
+                    to={`/usage?range=7d&w.account=${encodeURIComponent(a.id)}&sel=${encodeURIComponent(row.key)}`}
+                    className="clip"
+                    title={`${row.label} · ${row.detail}`}
+                  >
+                    {row.label}
+                  </Link>
+                  <span className="bar" aria-hidden>
+                    <i style={{ width: `${(points / most) * 100}%` }} />
+                  </span>
+                  <span className="num">{fmt.limit(points)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">
+              {week ? 'No limit use tied to agents this week.' : 'Reading usage…'}
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -268,8 +266,7 @@ const FIELDS: { key: keyof Policy; label: string; unit: string; max: number; abo
     label: 'Agents per account',
     unit: 'agents',
     max: 500,
-    about:
-      'How many working agents a fresh account takes before new ones go elsewhere; fewer as it fills.',
+    about: 'How many working agents a fresh account takes; fewer as it fills.',
   },
 ];
 
@@ -288,12 +285,12 @@ function PolicyEditor({ pool }: { pool: Pool }) {
     preview !== null && FIELDS.every((f) => preview.pool.policy[f.key] === values[f.key]);
 
   const hint = !dirty
-    ? 'Change a value to preview it.'
+    ? null
     : !valid
       ? 'Cutoffs go from 1 to 100%, agents from 1 to 500.'
       : previewed
         ? 'Saving would do this right now:'
-        : 'Preview to see what changes, then save.';
+        : 'Preview, then save.';
 
   const submit = async (save: boolean) => {
     setBusy(save ? 'save' : 'preview');
@@ -385,7 +382,7 @@ function PolicyEditor({ pool }: { pool: Pool }) {
           >
             Discard
           </Button>
-          <span className="muted small">{hint}</span>
+          {hint && <span className="muted small">{hint}</span>}
         </div>
         {previewed && <PolicyChange now={pool} then={preview.pool} />}
         {pool.notes.length > 0 && (

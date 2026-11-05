@@ -70,9 +70,11 @@ export function OAuthFlowDialog(props: OAuthFlowDialogProps) {
 
 function ProviderHint({ text, sponsor }: Pick<OAuthFlowDialogProps, 'text' | 'sponsor'>) {
   const { t } = useTranslation();
+  const hint = text('oauth_hint');
+  if (!hint && !sponsor) return null;
   return (
     <p className={styles.hint}>
-      {text('oauth_hint')}
+      {hint}
       {sponsor && (
         <>
           {' '}
@@ -380,9 +382,7 @@ function FlowStatusBar({ providerId, state, text, onStart, onCancel }: OAuthFlow
         <button type="button" className={styles.ghost} onClick={onStart}>
           {t('auth_login.restart_login')}
         </button>
-      ) : (
-        <span className={styles.statusAside}>{t('auth_login.waiting_background_hint')}</span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -396,7 +396,6 @@ function SuccessView({ text, onStart, onViewAuthFiles }: OAuthFlowDialogProps) {
         <path className={styles.successCheck} d="M16 27l7 7 14-15" />
       </svg>
       <div className={styles.resultTitle}>{text('oauth_status_success')}</div>
-      <p className={styles.resultHint}>{t('auth_login.success_saved_hint')}</p>
       <div className={styles.resultActions}>
         <button type="button" className={styles.secondary} onClick={onViewAuthFiles}>
           {t('auth_login.view_auth_files')}

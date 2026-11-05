@@ -120,8 +120,8 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
   const providerText = (provider: string, suffix: string) => {
     const card = providerCards.find((item) => item.id === provider);
     return card?.kind === 'plugin'
-      ? t(`auth_login.plugin_${suffix}`, { name: card.title })
-      : t(getAuthKey(provider, suffix));
+      ? t(`auth_login.plugin_${suffix}`, { name: card.title, defaultValue: '' })
+      : t(getAuthKey(provider, suffix), { defaultValue: '' });
   };
 
   /** 对话框没开时，toast 是唯一的结果反馈。 */

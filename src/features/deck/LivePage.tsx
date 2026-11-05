@@ -90,7 +90,6 @@ export function LivePage() {
         <section className="section lv-waiting" aria-labelledby="waiting-title">
           <div className="section-head">
             <h2 id="waiting-title">Waiting on you</h2>
-            <span className="sub">Sessions stopped on a question for you, newest first</span>
           </div>
           {waiting.length > 0 ? (
             <ul className="lv-rows">{waiting.map(row)}</ul>
@@ -112,9 +111,6 @@ export function LivePage() {
         <section className="section lv-running" aria-labelledby="running-title">
           <div className="section-head">
             <h2 id="running-title">Running now</h2>
-            <span className="sub">
-              {working} working · {running.length - working} idle
-            </span>
           </div>
           {running.length ? (
             groups.map(([app, list]) => (
@@ -163,7 +159,7 @@ export function LivePage() {
                 {moved.length > 0 && (
                 <details className="lv-moves">
                   <summary>
-                    {moved.length} {moved.length === 1 ? 'move' : 'moves'}, newest first
+                    {moved.length} {moved.length === 1 ? 'move' : 'moves'}
                   </summary>
                   <ol>
                     {moved.map((m) => (

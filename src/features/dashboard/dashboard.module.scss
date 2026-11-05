@@ -131,15 +131,6 @@
   }
 }
 
-.heroMeta {
-  margin: 0;
-  font-family: $font-mono;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
 .heroActions {
   display: flex;
   flex-wrap: wrap;
@@ -491,14 +482,6 @@
   letter-spacing: -0.02em;
   color: var(--text-primary);
   text-wrap: balance;
-}
-
-.sectionDescription {
-  margin: 0;
-  max-width: 64ch;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-secondary);
 }
 
 .panel {

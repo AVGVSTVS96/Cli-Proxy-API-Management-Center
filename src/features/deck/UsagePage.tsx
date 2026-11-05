@@ -201,10 +201,7 @@ export function UsagePage() {
   if (!view)
     return (
       <div className="deck">
-        <EmptyState
-          title={usage.error ?? 'Reading usage…'}
-          description={usage.error ? undefined : 'The first read of a range takes a few seconds.'}
-        />
+        <EmptyState title={usage.error ?? 'Reading usage…'} />
       </div>
     );
 
@@ -587,7 +584,7 @@ function Summary({
         <span className="figure">{fmt.usd(totals.apiUsd)}</span>
         <span className="muted small">
           <Delta now={totals.apiUsd} then={previous?.apiUsd} range={range} />
-          {previous ? ' · ' : ''}what this work would cost at API prices, not a bill
+          {previous ? ' · ' : ''}what this work would cost at API prices
         </span>
       </div>
       <dl className="figures-row">
@@ -659,7 +656,7 @@ function Ranking({
           <tr>
             <th className="n idx">#</th>
             <th>Name</th>
-            <th className="share">Share · over the range</th>
+            <th className="share">Share</th>
             <th className="accts">Accounts</th>
             {columns.map(([k, , , , , label]) => (
               <th key={k} className="n" aria-sort={k === key ? 'descending' : undefined}>
@@ -875,7 +872,7 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
           </table>
         ) : (
           <p className="muted small">
-            No limit readings cover this row's use, so its share of account limits is unknown.
+            No limit readings cover this row's use.
           </p>
         )}
 
@@ -915,10 +912,7 @@ function Detail({ row, state }: { row: UsageRow; state: State }) {
           </div>
         )}
 
-        <p className="muted small">
-          Limit shares are estimates: each rise in an account's reading is split across the sessions
-          using it then, by API value.
-        </p>
+        <p className="muted small">Limit shares are estimates.</p>
       </div>
     </section>
   );

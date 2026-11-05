@@ -52,7 +52,6 @@ export function Credits() {
     <section className="claude-credits" aria-labelledby="credits-heading">
       <div className="credits-heading">
         <h2 id="credits-heading">{t('credits.title')}</h2>
-        <span>{t('credits.separate')}</span>
         <button disabled={view.fetching} onClick={() => void view.reload()}>
           {t('credits.refresh')}
         </button>
@@ -70,7 +69,6 @@ export function Credits() {
             <article key={g.credentialId}>
               <div className="credit-label">
                 <h3>{t('credits.api')}</h3>
-                {!expired && <span className="credit-status is-live">{t('credits.live')}</span>}
               </div>
               <p className="credit-account">
                 {g.organization} · {label(g.account)}
@@ -112,7 +110,6 @@ export function Credits() {
                 {g.renewsAt > 0 && <> · {t('credits.next', { date: calendarDate(g.renewsAt) })}</>}
               </p>
               <footer>
-                {t('credits.noBilling')}{' '}
                 <a
                   href="https://platform.claude.com/settings/billing"
                   target="_blank"
@@ -132,9 +129,6 @@ export function Credits() {
             <article key={a.id}>
               <div className="credit-label">
                 <h3>{t('credits.cloud')}</h3>
-                {!stale && !expired && (
-                  <span className="credit-status is-live">{t('credits.live')}</span>
-                )}
               </div>
               <p className="credit-account">{a.label}</p>
               <p className="credit-value">
@@ -162,19 +156,15 @@ export function Credits() {
               <p className="credit-note">
                 {t('credits.cloudRoute')} <code>claude --cloud</code>
               </p>
-              <footer>
-                {t(stale ? 'credits.staleAt' : 'credits.sampled', {
-                  when: relativeTime(c.sampledAt),
-                })}{' '}
-                {t('credits.cloudEvery')}
-              </footer>
+              {stale && (
+                <footer>{t('credits.staleAt', { when: relativeTime(c.sampledAt) })}</footer>
+              )}
             </article>
           );
         })}
         <article className="credit-weekly">
           <div className="credit-label">
             <h3>{t('credits.weekly')}</h3>
-            <a href="#/accounts">{t('credits.accounts')} →</a>
           </div>
           {!accounts.length && <p className="credit-note">{t('credits.waiting')}</p>}
           <div className="credit-weeks">
@@ -196,20 +186,16 @@ export function Credits() {
                     ? t('credits.resets', { date: stamp(a.week.resetsAt) })
                     : t('credits.resetUnknown')}
                 </p>
-                <p className="credit-meta">
-                  {a.week.sampledAt
-                    ? t(
-                        now - a.week.sampledAt > 25 * 60_000
-                          ? 'credits.staleAt'
-                          : 'credits.sampled',
-                        { when: relativeTime(a.week.sampledAt) }
-                      )
-                    : t('credits.waiting')}
-                </p>
+                {(!a.week.sampledAt || now - a.week.sampledAt > 25 * 60_000) && (
+                  <p className="credit-meta">
+                    {a.week.sampledAt
+                      ? t('credits.staleAt', { when: relativeTime(a.week.sampledAt) })
+                      : t('credits.waiting')}
+                  </p>
+                )}
               </div>
             ))}
           </div>
-          <footer>{t('credits.weeklyNote')}</footer>
         </article>
       </div>
       {view.data && !view.data.api.length && !cloud.length && (

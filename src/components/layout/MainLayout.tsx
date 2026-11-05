@@ -616,7 +616,6 @@ export function MainLayout() {
         {
           path: '/',
           labelKey: 'nav.dashboard',
-          metaKey: 'nav_meta.dashboard',
           icon: sidebarIcons.dashboard,
         },
       ],
@@ -634,7 +633,6 @@ export function MainLayout() {
         {
           path: '/auth-files',
           labelKey: 'nav.auth_files',
-          metaKey: 'nav_meta.auth_files',
           badge: authFilesCount ?? undefined,
           badgeLabel:
             typeof authFilesCount === 'number'
@@ -676,7 +674,6 @@ export function MainLayout() {
         {
           path: '/logs',
           labelKey: 'nav.logs',
-          metaKey: 'nav_meta.logs',
           icon: sidebarIcons.logs,
         },
       ],
@@ -712,7 +709,6 @@ export function MainLayout() {
         {
           path: '/config',
           labelKey: 'nav.config_management',
-          metaKey: 'nav_meta.config_management',
           icon: sidebarIcons.config,
         },
         ...(supportsPlugin
@@ -720,13 +716,11 @@ export function MainLayout() {
               {
                 path: '/plugins',
                 labelKey: 'nav.plugins',
-                metaKey: 'nav_meta.plugins',
                 icon: sidebarIcons.plugins,
               },
               {
                 path: '/plugin-store',
                 labelKey: 'nav.plugin_store',
-                metaKey: 'nav_meta.plugin_store',
                 icon: sidebarIcons.pluginStore,
               },
             ]
