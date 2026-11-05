@@ -2,9 +2,9 @@
 
 ## Project Scope & Structure
 
-This is a React 19 + TypeScript + Vite management frontend for CLI Proxy API, not the proxy itself. It exclusively uses the backend v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
+This is BROADCOM, a React 19 + TypeScript + Vite dashboard for the CLIProxyAPI fork at AVGVSTVS96/CLIProxyAPI, not the proxy itself. It started as a fork of router-for-me/Cli-Proxy-API-Management-Center. Upstream pages exclusively use the backend v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
 
-- `src/features/`: feature-owned pages, components, hooks, types, and logic. Current features are `dashboard`, `providers`, `authFiles`, `oauth`, `quota`, `config`, `logs`, and `plugins`. Prefer this layout for new feature work.
+- `src/features/`: feature-owned pages, components, hooks, types, and logic. Current features are `dashboard`, `deck`, `providers`, `authFiles`, `oauth`, `quota`, `routing`, `config`, `logs`, and `plugins`. `deck` holds the BROADCOM pages (Home, Accounts, Usage, Live, Files, Claude plugins, Executor); they read the fork's `/deck` API through `src/features/deck/api.ts`, not `apiClient`. Prefer this layout for new feature work.
 - `src/pages/`: remaining route pages outside the feature layout (login, system, and the auth-file OAuth excluded-model/model-alias editors); `LogsPage.tsx` there is only a re-export of the logs feature. Follow nearby conventions when modifying these; do not migrate unrelated code.
 - `src/components/`, `src/hooks/`, `src/utils/`: shared UI, hooks, and utilities. Keep feature-specific code within its feature rather than promoting it prematurely.
 - `src/services/api/`: API client, domain endpoints, and backend data normalization. `src/services/storage/`: browser persistence.
@@ -36,7 +36,7 @@ Preserve hash routing and single-file deployment. Changes to assets, imports, co
 
 ## API Contracts & State
 
-- Treat backend contracts as the source of truth. Inspect `../CLIProxyAPI` before changing endpoint names, payloads, provider keys, OAuth callback parameters, auth-file semantics, or plugin/config contracts. If that checkout is unavailable, report the missing evidence rather than guessing; do not modify the backend unless requested.
+- Treat backend contracts as the source of truth. Inspect the proxy fork (AVGVSTVS96/CLIProxyAPI, usually checked out beside this repo as `../cliproxyapi`) before changing endpoint names, payloads, provider keys, OAuth callback parameters, auth-file semantics, or plugin/config contracts. If that checkout is unavailable, report the missing evidence rather than guessing; do not modify the backend unless requested.
 - Reuse `apiClient` from `src/services/api/client.ts` for Management API requests through domain modules. It centralizes the API prefix, bearer authentication, error normalization, and response-header handling. Avoid bypassing it with ad hoc requests in components.
 - Preserve the client's event integration: `unauthorized` handles 401s, `server-version-update` carries version/build metadata, and `server-plugin-support-update` carries plugin capability information. Keep plugin routes gated by backend support.
 - Normalize backend fields on read and serialize on write in the API layer; consult `transformers.ts` and the relevant domain module. Keep raw backend field-name handling out of ordinary UI components.
@@ -48,7 +48,7 @@ Preserve hash routing and single-file deployment. Changes to assets, imports, co
 
 Use 2-space indentation, semicolons, single quotes, ES5 trailing commas, and 100-character line width. Prefer typed React components and `unknown` with narrowing for untrusted data; avoid introducing `any` unless an unavoidable boundary requires it. Use the `@/` alias for `src` imports.
 
-Component files use PascalCase, hooks use `useName`, and API modules use domain names such as `oauth.ts`. SCSS Modules sit beside their page or component as `Name.module.scss`. Vite automatically injects `src/styles/variables.scss` into SCSS; new modules do not need to import it again. Reuse shared components from `src/components/ui/` and existing theme tokens before adding new primitives or hard-coded colors.
+Component files use PascalCase, hooks use `useName`, and API modules use domain names such as `oauth.ts`. SCSS Modules sit beside their page or component as `Name.module.scss`. Vite automatically injects `src/styles/variables.scss` into SCSS; new modules do not need to import it again. Reuse shared components from `src/components/ui/` and existing theme tokens before adding new primitives or hard-coded colors. The brand is neutral Helvetica with ink actions and one orange accent (`--brand`, `--brand-fill`); the name and mark live in `src/assets/brand.ts`.
 
 Keep user-facing text in i18n. Preserve keyboard interaction, accessible names, focus behavior, and reduced-motion handling when modifying interactive UI. For motion, reuse the timing tokens in `src/styles/themes.scss` (`--ease-out-strong`, `--dur-press`, `--dur-hover`) and the helpers in `src/hooks/motion.ts` (`prefersReducedMotion`, `useRevealOnScroll`, `useRevealGroup`, `useCountUp`) instead of ad hoc durations and easings.
 
@@ -64,6 +64,6 @@ Never commit real management keys, provider credentials, auth files, or other se
 
 ## Commits & Guidance Maintenance
 
-Use Conventional Commits, such as `feat(providers): add a provider` or `fix(auth-files): preserve disabled actions`. Keep changes focused. Pull requests should include a summary, linked issue when applicable, backend version/reproduction details for integration work, UI screenshots or notes when relevant, and verification results.
+Use signed Conventional Commits, such as `feat(accounts): show held resets` or `fix(auth-files): preserve disabled actions`, committed straight to `main`. Keep changes focused, and keep names, accounts, addresses and other private details out of code, fixtures, screenshots and commit messages: the repo is public.
 
-Maintain shared repository guidance in `AGENTS.md`. When updating it, synchronize the local `CLAUDE.md` to identical content if present; `CLAUDE.md` is currently ignored and untracked, so shared guidance must not depend on it. Keep guidance aligned with source and configuration rather than duplicating long implementation details.
+Maintain shared repository guidance in `AGENTS.md`. Keep guidance aligned with source and configuration rather than duplicating long implementation details.
