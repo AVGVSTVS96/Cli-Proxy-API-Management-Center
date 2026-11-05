@@ -3,25 +3,12 @@
 export type Range = 'today' | 'yesterday' | '7d' | '30d' | '6m';
 
 export type GroupBy =
-  | 'agent'
-  | 'session'
-  | 'project'
-  | 'model'
-  | 'harness'
-  | 'entrypoint'
-  | 'device'
-  | 'account';
+  'agent' | 'session' | 'project' | 'model' | 'harness' | 'entrypoint' | 'device' | 'account';
 
 export type Measure = 'tokens' | 'api' | 'plan' | 'fiveHour' | 'week';
 
 export type Dimension =
-  | 'app'
-  | 'harness'
-  | 'entrypoint'
-  | 'model'
-  | 'project'
-  | 'device'
-  | 'account';
+  'app' | 'harness' | 'entrypoint' | 'model' | 'project' | 'device' | 'account';
 
 export type UsageQuery = {
   range: Range;
@@ -84,7 +71,12 @@ export type UsageRow = {
 };
 
 /** Agent SDK and `claude -p` usage, which the five-hour meter charges `factor` times interactive. */
-export type AgentSdkUsage = { apiUsd: number; share: number; fiveHour: number | null; factor: number };
+export type AgentSdkUsage = {
+  apiUsd: number;
+  share: number;
+  fiveHour: number | null;
+  factor: number;
+};
 
 export type Totals = Amount & { sessions: number; cacheHitRate: number; points: Points };
 
@@ -151,6 +143,27 @@ export type Account = {
   /** When the pool spent this account's resets (unix ms), oldest first. */
   resetsSpent?: number[];
   atLimit: { available: boolean; nextAt: number | null } | null;
+  /** The API grant this credential spends, joined in by useAccounts from /credits. */
+  credit?: APIGrant;
+};
+
+/** A monthly API credit grant and what the proxy spent from it (the proxy's /deck/credits). */
+export type APIGrant = {
+  credentialId: string;
+  /** The pool id of the subscription account on the same Anthropic login. */
+  account: string;
+  organization: string;
+  remaining: number;
+  recorded: number;
+  allowance: number;
+  monthlyCap: number;
+  observedAt: number;
+  expiresAt: number;
+  renewsAt: number;
+  proxyUsd: number;
+  requests: number;
+  unpriced: number;
+  lastRequestAt: number | null;
 };
 
 export type Policy = { sessionCutoff: number; weeklyCutoff: number; agentsPerAccount: number };

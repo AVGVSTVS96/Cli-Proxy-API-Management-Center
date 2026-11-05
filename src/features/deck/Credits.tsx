@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores';
 import { useNow } from '@/hooks/useNow';
 import { useAccounts, useDeck } from './api';
 import { relativeTime } from './format';
+import type { APIGrant } from './types';
 import './credits.scss';
 
 type Credit = {
@@ -11,22 +12,6 @@ type Credit = {
   remaining: number | null;
   expiresAt: number | null;
   sampledAt: number;
-};
-type APIGrant = {
-  credentialId: string;
-  account: string;
-  organization: string;
-  remaining: number;
-  recorded: number;
-  allowance: number;
-  monthlyCap: number;
-  observedAt: number;
-  expiresAt: number;
-  renewsAt: number;
-  proxyUsd: number;
-  requests: number;
-  unpriced: number;
-  lastRequestAt: number | null;
 };
 
 const money = (value: number | null) =>
@@ -56,7 +41,7 @@ const stamp = (value: number) =>
 export function Credits() {
   const { t } = useTranslation();
   const { accounts: pooled } = useAccounts();
-  const accounts = pooled.filter((a) => a.label);
+  const accounts = pooled.filter((a) => a.label && !a.credit);
   const connected = useAuthStore((s) => s.connectionStatus === 'connected');
   const view = useDeck<{ api: APIGrant[] }>(connected ? '/credits' : null, 'credits');
   const now = useNow();
@@ -186,40 +171,44 @@ export function Credits() {
             </article>
           );
         })}
-        <article>
+        <article className="credit-weekly">
           <div className="credit-label">
             <h3>{t('credits.weekly')}</h3>
             <a href="#/accounts">{t('credits.accounts')} →</a>
           </div>
           {!accounts.length && <p className="credit-note">{t('credits.waiting')}</p>}
-          {accounts.map((a) => (
-            <div className="credit-week" key={a.id}>
-              <div>
-                <span>{a.label}</span>
-                <strong>{a.week.used === null ? '—' : `${a.week.used}%`}</strong>
+          <div className="credit-weeks">
+            {accounts.map((a) => (
+              <div className="credit-week" key={a.id}>
+                <div>
+                  <span>{a.label}</span>
+                  <strong>{a.week.used === null ? '—' : `${a.week.used}%`}</strong>
+                </div>
+                {a.week.used !== null && (
+                  <progress
+                    aria-label={t('credits.weekUsed', { account: a.label })}
+                    max={100}
+                    value={a.week.used}
+                  />
+                )}
+                <p className="credit-meta">
+                  {a.week.resetsAt
+                    ? t('credits.resets', { date: stamp(a.week.resetsAt) })
+                    : t('credits.resetUnknown')}
+                </p>
+                <p className="credit-meta">
+                  {a.week.sampledAt
+                    ? t(
+                        now - a.week.sampledAt > 25 * 60_000
+                          ? 'credits.staleAt'
+                          : 'credits.sampled',
+                        { when: relativeTime(a.week.sampledAt) }
+                      )
+                    : t('credits.waiting')}
+                </p>
               </div>
-              {a.week.used !== null && (
-                <progress
-                  aria-label={t('credits.weekUsed', { account: a.label })}
-                  max={100}
-                  value={a.week.used}
-                />
-              )}
-              <p className="credit-meta">
-                {a.week.resetsAt
-                  ? t('credits.resets', { date: stamp(a.week.resetsAt) })
-                  : t('credits.resetUnknown')}
-              </p>
-              <p className="credit-meta">
-                {a.week.sampledAt
-                  ? t(
-                      now - a.week.sampledAt > 25 * 60_000 ? 'credits.staleAt' : 'credits.sampled',
-                      { when: relativeTime(a.week.sampledAt) }
-                    )
-                  : t('credits.waiting')}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
           <footer>{t('credits.weeklyNote')}</footer>
         </article>
       </div>

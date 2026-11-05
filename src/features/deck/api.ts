@@ -2,7 +2,16 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
 import { computeApiUrl } from '@/utils/connection';
-import type { Account, LiveSession, LiveState, LiveValue, Pool, ServerEvent } from './types';
+import { shortAccount } from './format';
+import type {
+  APIGrant,
+  Account,
+  LiveSession,
+  LiveState,
+  LiveValue,
+  Pool,
+  ServerEvent,
+} from './types';
 
 /** The proxy's own management API serves Usage, Live and Accounts, with the key the dashboard signed in with. */
 function request(path: string, init: RequestInit = {}) {
@@ -43,7 +52,10 @@ export const send = <T>(path: string, method: string, body?: Record<string, Json
 export async function blob(path: string): Promise<Blob> {
   const response = await request(path);
 
-  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error ?? `Request failed (${response.status})`);
+  if (!response.ok)
+    throw new Error(
+      (await response.json().catch(() => ({}))).error ?? `Request failed (${response.status})`
+    );
 
   return response.blob();
 }
@@ -305,8 +317,24 @@ export function useAccounts() {
   const order = pool?.order ?? [];
   const rank = (id: string) => order.indexOf(id) + 1 || order.length + 1;
 
-  const accounts = useLiveList('a:')
-    .map(([, a]) => a)
+  const connected = useAuthStore((s) => s.connectionStatus === 'connected');
+  const grants = useDeck<{ api: APIGrant[] }>(connected ? '/credits' : null, 'credits').data?.api;
+  const live = useLiveList('a:').map(([, a]) => a);
+  const email = (id: string) => live.find((a) => a.id === id)?.label ?? '';
+
+  // An API key has no email of its own; it's named by the login whose credit it spends.
+  const accounts = live
+    .map((a) => {
+      const credit = grants?.find((g) => g.credentialId === a.id);
+      if (!credit) return a;
+      const owner = email(credit.account);
+      return {
+        ...a,
+        credit,
+        plan: a.plan || 'API credit',
+        label: a.label || (owner ? `${shortAccount(owner)} API` : 'API credit'),
+      };
+    })
     .sort((a, b) => rank(a.id) - rank(b.id));
 
   const name = (id: string | null) =>

@@ -8,7 +8,7 @@ import { useNow } from '@/hooks/useNow';
 import { useNotificationStore } from '@/stores';
 import { send, useAccounts, useDeck } from './api';
 import { Steps } from './chart';
-import { Alert, Meter } from './components';
+import { Alert, CreditMeter, Meter } from './components';
 import { STANDING, accountHue, fmt, shortAccount, when } from './format';
 import type { Account, AccountsView, Policy, PolicyResult, Pool, UsageView } from './types';
 import './deck.scss';
@@ -94,7 +94,9 @@ function History({
   );
   const fiveHourSince = Math.max(
     0,
-    ...view.history.filter((h) => h.kind === 'fiveHour').map((h) => h.points[h.points.length - 1]?.[0] ?? 0)
+    ...view.history
+      .filter((h) => h.kind === 'fiveHour')
+      .map((h) => h.points[h.points.length - 1]?.[0] ?? 0)
   );
 
   return (
@@ -103,7 +105,8 @@ function History({
         <h2 id="history-title">Limit use, last 7 days</h2>
         <span className="sub">
           Solid: the week · faint: five hours
-          {fiveHourSince > 0 && now - fiveHourSince > 86_400_000 &&
+          {fiveHourSince > 0 &&
+            now - fiveHourSince > 86_400_000 &&
             `, not reported since ${when(fiveHourSince)}`}
         </span>
       </div>
@@ -172,27 +175,35 @@ function AccountCard({
       </div>
 
       <div className="account-meters">
-        <Meter label="This week" window={a.week} hue={hue} />
-        <Meter label="Five hours" window={a.fiveHour} hue={hue} size="sm" />
+        {a.credit ? (
+          <CreditMeter grant={a.credit} hue={hue} />
+        ) : (
+          <>
+            <Meter label="This week" window={a.week} hue={hue} />
+            <Meter label="Five hours" window={a.fiveHour} hue={hue} size="sm" />
+          </>
+        )}
       </div>
 
       <ul className="facts small">
         <li>
           <b>{a.working}</b> working now
         </li>
-        <li className={signedOut || expiring ? 'warn' : undefined}>
-          {signedOut
-            ? 'Signed out'
-            : a.signInUntil
-              ? `Signed in until ${when(a.signInUntil)}`
-              : 'Sign-in expiry unknown'}
-          {(signedOut || expiring) && (
-            <>
-              {' · '}
-              <Link to="/oauth">Sign in again</Link>
-            </>
-          )}
-        </li>
+        {!a.credit && (
+          <li className={signedOut || expiring ? 'warn' : undefined}>
+            {signedOut
+              ? 'Signed out'
+              : a.signInUntil
+                ? `Signed in until ${when(a.signInUntil)}`
+                : 'Sign-in expiry unknown'}
+            {(signedOut || expiring) && (
+              <>
+                {' · '}
+                <Link to="/oauth">Sign in again</Link>
+              </>
+            )}
+          </li>
+        )}
         {a.heldResets.map((h) => (
           <li key={h.kind}>
             Holds {h.left} {h.kind} {h.left === 1 ? 'reset' : 'resets'}
@@ -200,7 +211,9 @@ function AccountCard({
           </li>
         ))}
         {a.resetPlan && <li>{a.resetPlan}</li>}
-        {a.resetsSpent?.map((at) => <li key={at}>Pool spent a reset {when(at)}</li>)}
+        {a.resetsSpent?.map((at) => (
+          <li key={at}>Pool spent a reset {when(at)}</li>
+        ))}
         {a.atLimit?.available && <li className="warn">Claude offers a limit reset now</li>}
       </ul>
       {a.reasons.length > 0 && <p className="reasons muted small">{a.reasons.join(' ')}</p>}

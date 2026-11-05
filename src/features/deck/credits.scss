@@ -44,6 +44,14 @@
       1px 0 0 var(--border-color),
       0 1px 0 var(--border-color);
   }
+  .credit-weekly {
+    grid-column: 1 / -1;
+  }
+  .credit-weeks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 0 28px;
+  }
   .credit-label {
     display: flex;
     justify-content: space-between;

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useNow } from '@/hooks/useNow';
 import { elapsedAt, fmt, when } from './format';
-import type { LimitWindow } from './types';
+import type { APIGrant, LimitWindow } from './types';
 
 const SDK_ENTRYPOINTS = new Set(['sdk-cli', 'sdk-ts', 'sdk-py']);
 
@@ -104,7 +104,45 @@ export function Meter({
       <div className="meter-foot">
         {resetsAt ? `Resets ${when(resetsAt)}` : 'No reset time'}
         {elapsed !== null && ` · ${fmt.pct(elapsed)} of it gone`}
-        {ahead !== false && ahead > 0.2 && used < cutoff && <span className="warn"> · ahead of pace</span>}
+        {ahead !== false && ahead > 0.2 && used < cutoff && (
+          <span className="warn"> · ahead of pace</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const utcDay = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+/** An API credential's grant as a meter: what's left of it, and when it lapses. */
+export function CreditMeter({ grant: g, hue }: { grant: APIGrant; hue?: string }) {
+  const now = useNow();
+  const expired = now >= g.expiresAt;
+  const spent = Math.min(g.allowance, Math.max(0, g.allowance - g.remaining));
+  const share = g.allowance > 0 ? (spent / g.allowance) * 100 : 0;
+  const tone = expired || g.remaining < 1 ? 'over' : share >= 85 ? 'near' : '';
+
+  return (
+    <div
+      className="meter md"
+      role="meter"
+      aria-valuenow={Math.round(share)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="API credit"
+      aria-valuetext={`${fmt.usd(g.remaining)} left of ${fmt.usd(g.allowance)}`}
+      data-c={hue}
+    >
+      <div className="meter-label">
+        <span>API credit</span>
+        <b className={tone}>{expired ? 'Expired' : `${fmt.usd(g.remaining)} left`}</b>
+      </div>
+      <div className="meter-track">
+        <div className={`meter-fill ${tone}`} style={{ width: `${share}%` }} />
+      </div>
+      <div className="meter-foot">
+        {fmt.usd(g.proxyUsd)} spent via proxy of {fmt.usd(g.allowance)} ·{' '}
+        {expired ? 'expired' : 'expires'} {utcDay.format(g.expiresAt)} UTC
       </div>
     </div>
   );
