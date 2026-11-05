@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "cli-proxy-webui-react",
+      "name": "broadcom",
       "dependencies": {
         "@codemirror/lang-yaml": "^6.1.3",
         "@codemirror/merge": "^6.12.3",
