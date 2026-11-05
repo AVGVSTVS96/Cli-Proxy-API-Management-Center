@@ -61,12 +61,12 @@
     "unsaved_changes_message": "저장되지 않은 변경 사항이 있습니다. 지금 나가면 변경 사항이 삭제됩니다. 나가시겠습니까?"
   },
   "title": {
-    "login": "CLI Proxy API 관리 센터",
-    "abbr": "CPAMC"
+    "login": "BROADCOM",
+    "abbr": "BROADCOM"
   },
   "splash": {
-    "title": "CLI Proxy API",
-    "subtitle": "관리 센터"
+    "title": "BROADCOM",
+    "subtitle": "CLI Proxy API"
   },
   "login": {
     "connection_current": "현재 URL",
@@ -1985,7 +1985,7 @@
     "toggle_collapse": "사이드바 접기",
     "expand": "펼치기",
     "collapse": "접기",
-    "subtitle": "CLI Proxy API 콘솔",
+    "subtitle": "CLI Proxy API",
     "auth_files_count": "인증 파일: {{count}}개"
   },
   "footer": {

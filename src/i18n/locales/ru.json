@@ -61,12 +61,12 @@
     "unsaved_changes_message": "У вас есть несохранённые изменения. Если вы уйдёте, они будут потеряны. Выйти?"
   },
   "title": {
-    "login": "Центр управления CLI Proxy API",
-    "abbr": "CPAMC"
+    "login": "BROADCOM",
+    "abbr": "BROADCOM"
   },
   "splash": {
-    "title": "CLI Proxy API",
-    "subtitle": "Центр управления"
+    "title": "BROADCOM",
+    "subtitle": "CLI Proxy API"
   },
   "login": {
     "connection_current": "Текущий URL",
@@ -1979,7 +1979,7 @@
     "toggle_collapse": "Свернуть боковую панель",
     "expand": "Развернуть",
     "collapse": "Свернуть",
-    "subtitle": "Консоль управления CLI Proxy API",
+    "subtitle": "CLI Proxy API",
     "auth_files_count": "Файлов аутентификации: {{count}}"
   },
   "footer": {

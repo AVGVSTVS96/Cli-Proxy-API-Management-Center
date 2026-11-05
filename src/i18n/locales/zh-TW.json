@@ -61,12 +61,12 @@
     "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？"
   },
   "title": {
-    "login": "CLI Proxy API Management Center",
-    "abbr": "CPAMC"
+    "login": "BROADCOM",
+    "abbr": "BROADCOM"
   },
   "splash": {
-    "title": "CLI Proxy API",
-    "subtitle": "管理中心"
+    "title": "BROADCOM",
+    "subtitle": "CLI Proxy API"
   },
   "login": {
     "connection_current": "目前位址",
@@ -2011,7 +2011,7 @@
     "toggle_collapse": "收起側邊欄",
     "expand": "展開",
     "collapse": "收起",
-    "subtitle": "CLI Proxy API 管理控制台",
+    "subtitle": "CLI Proxy API",
     "auth_files_count": "驗證檔案：{{count}} 個"
   },
   "footer": {

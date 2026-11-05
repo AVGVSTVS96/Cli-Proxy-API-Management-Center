@@ -61,12 +61,12 @@
     "unsaved_changes_message": "You have unsaved changes. Leaving now will discard them. Do you want to leave?"
   },
   "title": {
-    "login": "CLI Proxy API Management Center",
-    "abbr": "CPAMC"
+    "login": "BROADCOM",
+    "abbr": "BROADCOM"
   },
   "splash": {
-    "title": "CLI Proxy API",
-    "subtitle": "Management Center"
+    "title": "BROADCOM",
+    "subtitle": "CLI Proxy API"
   },
   "login": {
     "connection_current": "Current URL",
@@ -1985,7 +1985,7 @@
     "toggle_collapse": "Collapse sidebar",
     "expand": "Expand",
     "collapse": "Collapse",
-    "subtitle": "CLI Proxy API Console",
+    "subtitle": "CLI Proxy API",
     "auth_files_count": "Authentication files: {{count}}"
   },
   "footer": {

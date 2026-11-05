@@ -3,7 +3,7 @@
  */
 
 // 颜色
-$primary-color: #8b8680;
+$primary-color: #737373;
 $success-color: #10b981;
 $warning-color: #c65746;
 $error-color: #c65746;
@@ -45,8 +45,8 @@ $z-notification: 3000;
 
 // 字体
 $font-family:
-  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
-  'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Arial,
+  sans-serif;
 
 $font-mono:
   ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas,

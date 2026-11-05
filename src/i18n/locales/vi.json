@@ -61,12 +61,12 @@
     "unsaved_changes_message": "Bạn có thay đổi chưa lưu. Rời đi bây giờ sẽ mất các thay đổi đó. Bạn có muốn rời đi không?"
   },
   "title": {
-    "login": "Trung tâm Quản lý CLI Proxy API",
-    "abbr": "CPAMC"
+    "login": "BROADCOM",
+    "abbr": "BROADCOM"
   },
   "splash": {
-    "title": "CLI Proxy API",
-    "subtitle": "Trung tâm Quản lý"
+    "title": "BROADCOM",
+    "subtitle": "CLI Proxy API"
   },
   "login": {
     "connection_current": "URL hiện tại",
@@ -1941,7 +1941,7 @@
     "toggle_collapse": "Thu gọn thanh bên",
     "expand": "Mở rộng",
     "collapse": "Thu gọn",
-    "subtitle": "Bảng điều khiển CLI Proxy API",
+    "subtitle": "CLI Proxy API",
     "auth_files_count": "File xác thực: {{count}}"
   },
   "footer": {

@@ -61,12 +61,12 @@
     "unsaved_changes_message": "Kaydedilmemiş Değişiklikler Var. Şimdi Ayrılırsan Bunlar Silinir. Ayrılmak İstiyor Musun?"
   },
   "title": {
-    "login": "CLIProxyAPI Yönetim Merkezi",
-    "abbr": "CPAMC"
+    "login": "BROADCOM",
+    "abbr": "BROADCOM"
   },
   "splash": {
-    "title": "CLIProxyAPI",
-    "subtitle": "Yönetim Merkezi"
+    "title": "BROADCOM",
+    "subtitle": "CLI Proxy API"
   },
   "login": {
     "connection_current": "Geçerli URL",
@@ -1985,7 +1985,7 @@
     "toggle_collapse": "Kenar Çubuğunu Daralt",
     "expand": "Genişlet",
     "collapse": "Daralt",
-    "subtitle": "CLIProxyAPI Konsolu",
+    "subtitle": "CLI Proxy API",
     "auth_files_count": "Kimlik Doğrulama Dosyaları: {{count}}"
   },
   "footer": {
