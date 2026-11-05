@@ -98,7 +98,7 @@ export const accountHue = (id: string, ids: readonly string[]) => {
   return i < 0 ? 'muted' : String(ACCOUNT_SLOTS[i % ACCOUNT_SLOTS.length]);
 };
 
-/** An account's short name: the part before @, or the company for a work address ("shahidy"). */
+/** An account's short name: the part before @, or the company for a work address ("acme" for ada@acme.com). */
 export const shortAccount = (label: string) => {
   const [local, domain = ''] = label.split('@');
 
