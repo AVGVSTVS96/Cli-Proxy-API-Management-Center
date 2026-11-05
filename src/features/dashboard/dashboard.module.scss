@@ -75,7 +75,7 @@
   align-items: center;
   padding-top: clamp($spacing-md, 3vh, 40px);
   /* 底部留出脉搏线的呼吸空间 */
-  padding-bottom: clamp(64px, 11vh, 120px);
+  padding-bottom: clamp(48px, 8vh, 88px);
 
   @media (max-width: 900px) {
     grid-template-columns: minmax(0, 1fr);
@@ -107,8 +107,8 @@
 /* 判词标题：文案来自实时状态，短，所以敢放大 */
 .heroTitle {
   margin: 0;
-  font-size: clamp(44px, 6.2vw, 80px);
-  line-height: 1.05;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.1;
   font-weight: 700;
   letter-spacing: -0.035em;
   color: var(--text-primary);

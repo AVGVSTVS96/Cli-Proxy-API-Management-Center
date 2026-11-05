@@ -152,10 +152,10 @@
     "system_info": "Runtime & diagnostics"
   },
   "dashboard": {
-    "hero_verdict_good": "All systems steady",
-    "hero_verdict_warning": "Minor turbulence",
-    "hero_verdict_critical": "Needs attention",
-    "hero_verdict_idle": "Quiet for now",
+    "hero_verdict_good": "Proxy traffic steady",
+    "hero_verdict_warning": "Some proxy requests failing",
+    "hero_verdict_critical": "Many proxy requests failing",
+    "hero_verdict_idle": "No proxy traffic yet",
     "hero_verdict_offline": "Waiting to connect",
     "hero_verdict_connecting": "Connecting",
     "hero_period": ".",

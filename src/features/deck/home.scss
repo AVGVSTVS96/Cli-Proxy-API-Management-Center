@@ -1,0 +1,428 @@
+// Home: the pool at a glance, after Headroom (pace), Ben Davis's Columbia Router (pools) and
+// Theo's quota ledger.
+
+.deck.home {
+  --bad: #e5484d;
+  gap: 20px;
+
+  .home-head {
+    display: grid;
+    gap: 8px;
+    padding: 4px 0 8px;
+
+    h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.08;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+
+      span[data-c] {
+        color: var(--c);
+      }
+    }
+  }
+
+  .home-sub {
+    max-width: 70ch;
+    font-size: 15px;
+    line-height: 22px;
+    color: var(--text-secondary);
+  }
+
+  .num.bad,
+  .bad {
+    color: var(--bad);
+  }
+
+  // Pools
+
+  .pools {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--deck-surface);
+  }
+
+  .pool {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    min-width: 0;
+    padding: 18px 20px;
+    box-shadow:
+      1px 0 0 var(--border-color),
+      0 1px 0 var(--border-color);
+
+    h2 {
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0;
+    }
+  }
+
+  .pool-value {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+
+    b {
+      font-size: 34px;
+      line-height: 38px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    span {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+  }
+
+  .pool-bar {
+    display: flex;
+    gap: 3px;
+    height: 8px;
+
+    > span {
+      flex: 1;
+      overflow: hidden;
+      border-radius: 2px;
+      background: color-mix(in srgb, var(--c) 14%, var(--bg-tertiary));
+
+      i {
+        display: block;
+        height: 100%;
+        background: var(--c);
+      }
+    }
+  }
+
+  .pool-keys {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    line-height: 16px;
+
+    li {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+
+      b {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .pool-foot {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  // Pace
+
+  .pace {
+    padding: 18px 20px 14px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .pace-head {
+    display: grid;
+    gap: 2px;
+
+    h2 {
+      font-size: 20px;
+      line-height: 26px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .pace-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+    gap: 20px;
+    align-items: start;
+  }
+
+  .pace-chart {
+    min-width: 0;
+
+    .grid {
+      stroke: var(--deck-grid);
+    }
+
+    .axis {
+      fill: var(--text-tertiary);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .even {
+      stroke: var(--text-tertiary);
+      stroke-width: 1;
+    }
+
+    .even-label {
+      fill: var(--text-tertiary);
+      font-size: 11px;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .cut {
+      stroke: var(--text-tertiary);
+      stroke-dasharray: 2 4;
+    }
+
+    .used {
+      fill: none;
+      stroke: var(--c);
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+
+    .projected {
+      stroke: var(--c);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 4;
+      opacity: 0.8;
+    }
+
+    .hatch {
+      stroke: var(--bad);
+      stroke-width: 2;
+    }
+
+    .locked {
+      opacity: 0.75;
+    }
+
+    .runs-out {
+      fill: var(--bad);
+      stroke: var(--deck-surface);
+      stroke-width: 2;
+    }
+
+    .now {
+      fill: var(--c);
+      stroke: var(--deck-surface);
+      stroke-width: 2;
+    }
+
+    .now-label {
+      fill: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .pace-list {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr) auto;
+      grid-template-areas:
+        'swatch name pace'
+        '. outcome outcome';
+      align-items: center;
+      gap: 0 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+
+      &:first-child {
+        background: var(--bg-tertiary);
+      }
+
+      .swatch {
+        grid-area: swatch;
+      }
+
+      .clip {
+        grid-area: name;
+        font-weight: 550;
+      }
+
+      b {
+        grid-area: pace;
+        font-weight: 600;
+      }
+
+      span:last-child {
+        grid-area: outcome;
+        font-size: 12px;
+        text-align: left;
+      }
+    }
+  }
+
+  .pace-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+
+    .k::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 0;
+      margin-right: 6px;
+      vertical-align: middle;
+      border-top: 2px solid var(--text-secondary);
+    }
+
+    .projected::before {
+      border-top-style: dashed;
+    }
+
+    .locked::before {
+      height: 6px;
+      border: 0;
+      background: repeating-linear-gradient(45deg, var(--bad) 0 2px, transparent 2px 4px);
+    }
+  }
+
+  // Ledger
+
+  .ledger-rows {
+    display: grid;
+  }
+
+  .ledger-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(170px, 1.3fr) minmax(150px, 1.1fr) 56px 172px;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+
+    &.next {
+      background: color-mix(in srgb, var(--c) 6%, transparent);
+    }
+  }
+
+  .ledger-labels {
+    padding-top: 0;
+    border-top: 0;
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .ledger-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+
+    .clip {
+      display: grid;
+    }
+
+    b {
+      font-weight: 600;
+    }
+  }
+
+  .bar-cell {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+
+    &.unread .num {
+      color: var(--text-tertiary);
+      font-weight: 400;
+    }
+  }
+
+  .bar-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+
+    b {
+      font-weight: 600;
+      min-width: 3.5ch;
+    }
+  }
+
+  .bar-track {
+    height: 6px;
+    border-radius: 9999px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--c) 14%, var(--bg-tertiary));
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--c);
+
+      &.bad {
+        background: var(--bad);
+      }
+    }
+  }
+
+  @container deck (max-width: 860px) {
+    .pace-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ledger-labels {
+      display: none;
+    }
+
+    .ledger-row {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas:
+        'name status'
+        'week five';
+      gap: 10px 16px;
+
+      > :nth-child(1) {
+        grid-area: name;
+      }
+
+      > :nth-child(2) {
+        grid-area: week;
+      }
+
+      > :nth-child(3) {
+        grid-area: five;
+      }
+
+      > :nth-child(4) {
+        display: none;
+      }
+
+      > :nth-child(5) {
+        grid-area: status;
+        justify-self: end;
+      }
+    }
+  }
+}
+
+[data-theme='dark'] .deck.home {
+  --bad: #ff6369;
+}
