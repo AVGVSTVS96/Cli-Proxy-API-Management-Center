@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="BROADCOM home: which account takes new work and what is left in each pool">
+<rect width="1200" height="600" rx="20" fill="#0a0a0a"/>
+<g transform="translate(64 52)"><rect width="36" height="36" rx="8" fill="#ededed"/><rect x="8" y="9" width="20" height="4.5" rx="1.2" fill="#ff8a1f"/><rect x="8" y="15.75" width="14.5" height="4.5" rx="1.2" fill="#0a0a0a"/><rect x="8" y="22.5" width="9" height="4.5" rx="1.2" fill="#0a0a0a"/><text x="50" y="25" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="0.6" fill="#ededed">BROADCOM</text></g>
+<text x="64" y="178" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="-2.2" fill="#ededed">New work runs on <tspan fill="#ff8a1f">work</tspan>.</text>
+<text x="64" y="222" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="19" fill="#a3a3a3">Max 20x, 12% of its week used. 1 of 4 plans is at its weekly cutoff; spare is back Sat 6:00 PM.</text>
+<rect x="64" y="286" width="1072" height="250" rx="14" fill="#121212" stroke="#262626"/>
+<line x1="421.3333333333333" y1="286" x2="421.3333333333333" y2="536" stroke="#262626"/>
+<line x1="778.6666666666666" y1="286" x2="778.6666666666666" y2="536" stroke="#262626"/>
+<text x="88" y="322" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#a3a3a3">Plans · this week</text>
+<text x="88" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1" fill="#ededed">212%<tspan dx="8" font-size="14" font-weight="400" letter-spacing="0" fill="#a3a3a3">left of 400%</tspan></text>
+<rect x="88" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#e8622c" fill-opacity="0.22"/>
+<rect x="88" y="388" width="65.41333333333333" height="8" rx="1.5" fill="#e8622c"/>
+<rect x="166.33333333333331" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#16a36a" fill-opacity="0.22"/>
+<rect x="166.33333333333331" y="388" width="55.00666666666666" height="8" rx="1.5" fill="#16a36a"/>
+<rect x="244.66666666666666" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#2f6fdb" fill-opacity="0.22"/>
+<rect x="244.66666666666666" y="388" width="37.166666666666664" height="8" rx="1.5" fill="#2f6fdb"/>
+<rect x="323" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#e46ea0" fill-opacity="0.22"/>
+<rect x="88" y="416" width="10" height="10" rx="1.5" fill="#e8622c"/>
+<text x="106" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">work</text>
+<text x="397.3333333333333" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">88%</text>
+<rect x="88" y="436" width="10" height="10" rx="1.5" fill="#16a36a"/>
+<text x="106" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">lab</text>
+<text x="397.3333333333333" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">74%</text>
+<rect x="88" y="456" width="10" height="10" rx="1.5" fill="#2f6fdb"/>
+<text x="106" y="466" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">home</text>
+<text x="397.3333333333333" y="466" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">50%</text>
+<rect x="88" y="476" width="10" height="10" rx="1.5" fill="#e46ea0"/>
+<text x="106" y="486" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">spare</text>
+<text x="397.3333333333333" y="486" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">0%</text>
+<text x="88" y="510" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#787878">Next reset Sat 6:00 PM</text>
+<text x="445.3333333333333" y="322" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#a3a3a3">Plans · five hours</text>
+<text x="445.3333333333333" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1" fill="#ededed">81%<tspan dx="8" font-size="14" font-weight="400" letter-spacing="0" fill="#a3a3a3">left of 100%</tspan></text>
+<rect x="445.3333333333333" y="388" width="309.3333333333333" height="8" rx="1.5" fill="#e8622c" fill-opacity="0.22"/>
+<rect x="445.3333333333333" y="388" width="250.56" height="8" rx="1.5" fill="#e8622c"/>
+<rect x="445.3333333333333" y="416" width="10" height="10" rx="1.5" fill="#e8622c"/>
+<text x="463.3333333333333" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">work</text>
+<text x="754.6666666666666" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">81%</text>
+<text x="445.3333333333333" y="510" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#787878">Next reset 10:20 AM</text>
+<text x="802.6666666666666" y="322" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#a3a3a3">API credit</text>
+<text x="802.6666666666666" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1" fill="#ededed">$148.20<tspan dx="8" font-size="14" font-weight="400" letter-spacing="0" fill="#a3a3a3">left of $300.00</tspan></text>
+<rect x="802.6666666666666" y="388" width="152.66666666666666" height="8" rx="1.5" fill="#16a36a" fill-opacity="0.22"/>
+<rect x="802.6666666666666" y="388" width="97.70666666666666" height="8" rx="1.5" fill="#16a36a"/>
+<rect x="959.3333333333333" y="388" width="152.66666666666666" height="8" rx="1.5" fill="#2f6fdb" fill-opacity="0.22"/>
+<rect x="959.3333333333333" y="388" width="53.43333333333333" height="8" rx="1.5" fill="#2f6fdb"/>
+<rect x="802.6666666666666" y="416" width="10" height="10" rx="1.5" fill="#16a36a"/>
+<text x="820.6666666666666" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">lab</text>
+<text x="1112" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">$96.40</text>
+<rect x="802.6666666666666" y="436" width="10" height="10" rx="1.5" fill="#2f6fdb"/>
+<text x="820.6666666666666" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#a3a3a3">home</text>
+<text x="1112" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#ededed">$51.80</text>
+<text x="802.6666666666666" y="510" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#787878">Next grant Nov 19</text>
+</svg>
