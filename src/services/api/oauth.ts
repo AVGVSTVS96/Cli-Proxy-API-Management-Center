@@ -19,6 +19,9 @@ export interface OAuthStartResponse {
   expires_in?: number;
 }
 
+/** The provider's redirect URL, or a code shown on its page with the login's state. */
+export type OAuthCallback = string | { code: string; state: string };
+
 export interface OAuthCallbackResponse {
   status: 'ok';
 }
@@ -74,11 +77,12 @@ export const oauthApi = {
       ...(signal ? { signal } : {}),
     }),
 
-  submitCallback: (provider: string, redirectUrl: string, signal?: AbortSignal) => {
+  submitCallback: (provider: string, callback: OAuthCallback, signal?: AbortSignal) => {
     const providerKey = normalizeProviderForManagementPath(provider);
+    const fields = typeof callback === 'string' ? { redirect_url: callback } : callback;
     return apiClient.post<OAuthCallbackResponse>(
       '/oauth/callback',
-      { provider: providerKey, redirect_url: redirectUrl },
+      { provider: providerKey, ...fields },
       signal ? { signal } : undefined
     );
   },

@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { IconExternalLink, IconLoader2 } from '@/components/ui/icons';
 import type { ProviderFlowState } from '../hooks/useOAuthFlows';
 import { resolveFlowView, splitAuthUrl, type FlowView } from '../flowView';
+import { copyToClipboard } from '@/utils/clipboard';
 import { BrandGlyph } from './BrandGlyph';
 import { CopyButton } from './CopyButton';
 import styles from './OAuthFlowDialog.module.scss';
@@ -41,7 +42,8 @@ export interface OAuthFlowDialogProps {
   onStart: () => void;
   onCancel: () => void;
   onCallbackChange: (value: string) => void;
-  onCallbackSubmit: () => void;
+  /** `value` submits that text instead of the field's, as when it was just pasted. */
+  onCallbackSubmit: (value?: string) => void;
   onViewAuthFiles: () => void;
   onClose: () => void;
 }
@@ -140,9 +142,23 @@ function FlowBody(props: OAuthFlowDialogProps & { view: Exclude<FlowView, 'succe
                 showLabel
               />
             </div>
+            {providerId === 'codex' && (
+              <p className={styles.stepHint}>
+                {t('auth_login.codex_device_hint')}{' '}
+                <a
+                  className={styles.inlineLink}
+                  href="https://chatgpt.com/#settings/Security"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth_login.codex_device_settings_link')}
+                  <IconExternalLink size={11} aria-hidden="true" />
+                </a>
+              </p>
+            )}
           </Step>
         )}
-        {props.supportsCallback && <CallbackStep {...props} />}
+        {props.supportsCallback && state.flow !== 'device' && <CallbackStep {...props} />}
       </ol>
     </div>
   );
@@ -202,9 +218,13 @@ function OpenStep({ state, text }: OAuthFlowDialogProps) {
           type="button"
           className={styles.primary}
           disabled={!url}
-          onClick={() => url && window.open(url, '_blank', 'noopener,noreferrer')}
+          onClick={() => {
+            if (!url) return;
+            if (state.userCode) void copyToClipboard(state.userCode);
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }}
         >
-          {text('open_link')}
+          {state.userCode ? t('auth_login.device_copy_and_open') : text('open_link')}
           <IconExternalLink size={14} aria-hidden="true" />
         </button>
       </div>
@@ -224,17 +244,27 @@ function CallbackStep({
   const feedbackId = useId();
   const isXai = providerId === 'xai';
   const isDevin = providerId === 'devin';
+  const isCode = state.flow === 'code';
   const disabled = !state.url || (isDevin && (state.cancelling || state.status !== 'waiting'));
-  const hintKey = isXai
-    ? 'auth_login.xai_callback_hint'
-    : isDevin
-      ? 'auth_login.devin_callback_hint'
-      : 'auth_login.oauth_callback_hint';
-  const placeholderKey = isXai
-    ? 'auth_login.xai_callback_placeholder'
-    : isDevin
-      ? 'auth_login.devin_callback_placeholder'
-      : 'auth_login.oauth_callback_placeholder';
+  const hintKey = isCode
+    ? 'auth_login.paste_code_hint'
+    : isXai
+      ? 'auth_login.xai_callback_hint'
+      : isDevin
+        ? 'auth_login.devin_callback_hint'
+        : 'auth_login.oauth_callback_hint';
+  const placeholderKey = isCode
+    ? 'auth_login.paste_code_placeholder'
+    : isXai
+      ? 'auth_login.xai_callback_placeholder'
+      : isDevin
+        ? 'auth_login.devin_callback_placeholder'
+        : 'auth_login.oauth_callback_placeholder';
+  const titleKey = isCode
+    ? 'auth_login.paste_code_label'
+    : isXai
+      ? 'auth_login.xai_callback_label'
+      : 'auth_login.oauth_callback_label';
 
   const feedback = state.callbackValidation
     ? { tone: 'error' as const, message: state.callbackValidation }
@@ -249,9 +279,13 @@ function CallbackStep({
 
   return (
     <Step
-      title={t(isXai ? 'auth_login.xai_callback_label' : 'auth_login.oauth_callback_label')}
+      title={t(titleKey)}
       titleFor={inputId}
-      aside={<span className={styles.optional}>{t('auth_login.optional_step')}</span>}
+      aside={
+        isCode ? undefined : (
+          <span className={styles.optional}>{t('auth_login.optional_step')}</span>
+        )
+      }
     >
       <p className={styles.stepHint} id={hintId}>
         {t(hintKey)}
@@ -268,6 +302,13 @@ function CallbackStep({
           className={`input ${styles.callbackInput}`}
           value={state.callbackUrl || ''}
           onChange={(event) => onCallbackChange(event.target.value)}
+          onPaste={(event) => {
+            const pasted = event.clipboardData.getData('text').trim();
+            if (!pasted) return;
+            event.preventDefault();
+            onCallbackChange(pasted);
+            onCallbackSubmit(pasted);
+          }}
           placeholder={t(placeholderKey)}
           disabled={disabled}
           autoComplete="off"

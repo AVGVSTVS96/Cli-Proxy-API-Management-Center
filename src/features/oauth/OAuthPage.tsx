@@ -235,7 +235,7 @@ export function OAuthPage() {
           onStart={() => void flows.startAuth(dialogCard.id)}
           onCancel={() => void flows.cancelAuth(dialogCard.id)}
           onCallbackChange={(value) => flows.setCallbackInput(dialogCard.id, value)}
-          onCallbackSubmit={() => void flows.submitCallback(dialogCard.id)}
+          onCallbackSubmit={(value) => void flows.submitCallback(dialogCard.id, value)}
           onViewAuthFiles={viewAuthFiles}
           onClose={closeDialog}
         />

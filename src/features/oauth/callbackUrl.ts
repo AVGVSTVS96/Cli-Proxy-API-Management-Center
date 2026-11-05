@@ -69,6 +69,18 @@ const buildXaiCallbackUrl = (input: string, state?: string): string | null => {
   return callbackUrl.toString();
 };
 
+/**
+ * Claude's hosted page shows `code#state` for the user to paste back; the code
+ * alone works too, with this login's state. A pasted URL goes through as is.
+ */
+export const readPastedCode = (input: string, state?: string) => {
+  const trimmed = input.trim();
+  if (isAbsoluteHttpUrl(trimmed)) return trimmed;
+  const [code, pastedState] = trimmed.split('#').map((part) => part.trim());
+  const loginState = pastedState || state?.trim();
+  return code && loginState ? { code, state: loginState } : null;
+};
+
 export const resolveCallbackUrl = (
   provider: string,
   input: string,

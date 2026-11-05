@@ -61,7 +61,7 @@ export function AddAccount() {
           onStart={() => void flows.startAuth(card.id)}
           onCancel={() => void flows.cancelAuth(card.id)}
           onCallbackChange={(value) => flows.setCallbackInput(card.id, value)}
-          onCallbackSubmit={() => void flows.submitCallback(card.id)}
+          onCallbackSubmit={(value) => void flows.submitCallback(card.id, value)}
           onViewAuthFiles={() => navigate('/auth-files')}
           onClose={close}
         />

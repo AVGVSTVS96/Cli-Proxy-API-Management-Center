@@ -12,7 +12,7 @@ import ru from '@/i18n/locales/ru.json';
 import ko from '@/i18n/locales/ko.json';
 import vi from '@/i18n/locales/vi.json';
 import { OAuthPage } from '@/features/oauth/OAuthPage';
-import { resolveCallbackUrl, XAI_CALLBACK_URL } from '@/features/oauth/callbackUrl';
+import { readPastedCode, resolveCallbackUrl, XAI_CALLBACK_URL } from '@/features/oauth/callbackUrl';
 import { resolveFlowView, splitAuthUrl } from '@/features/oauth/flowView';
 import { buildPluginOAuthProviderCards, OAUTH_PROVIDERS } from '@/features/oauth/providers';
 import {
@@ -44,6 +44,22 @@ describe('OAuth dialog view resolution', () => {
       rest: '/cb',
     });
     expect(splitAuthUrl('not a url')).toEqual({ host: '', rest: 'not a url' });
+  });
+});
+
+describe('pasted Claude code', () => {
+  test('splits the code#state Claude shows', () => {
+    expect(readPastedCode(' abc#st-9 ', 'st-1')).toEqual({ code: 'abc', state: 'st-9' });
+  });
+
+  test('pairs a bare code with this login state', () => {
+    expect(readPastedCode('abc', 'st-1')).toEqual({ code: 'abc', state: 'st-1' });
+    expect(readPastedCode('abc')).toBeNull();
+  });
+
+  test('passes a pasted URL through', () => {
+    const url = 'https://platform.claude.com/oauth/code/callback?code=abc&state=st-1';
+    expect(readPastedCode(url, 'st-1')).toBe(url);
   });
 });
 

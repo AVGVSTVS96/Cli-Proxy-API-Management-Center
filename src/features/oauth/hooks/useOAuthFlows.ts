@@ -6,7 +6,7 @@ import { getErrorMessage, isRecord } from '@/utils/helpers';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import { createOAuthAttempts, type OAuthAttempt } from '../oauthAttempts';
 import { validateDevinCallback } from '../devinOAuth';
-import { resolveCallbackUrl } from '../callbackUrl';
+import { readPastedCode, resolveCallbackUrl } from '../callbackUrl';
 import {
   buildPluginOAuthProviderCards,
   type OAuthProviderCard,
@@ -16,6 +16,8 @@ import {
 export interface ProviderFlowState {
   url?: string;
   userCode?: string;
+  /** `device`: enter userCode at url. `code`: paste back the code the provider's page shows. */
+  flow?: string;
   state?: string;
   status?: 'waiting' | 'success' | 'error';
   error?: string;
@@ -251,6 +253,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
     updateProviderState(provider, {
       url: undefined,
       userCode: undefined,
+      flow: undefined,
       state: undefined,
       status: 'waiting',
       polling: true,
@@ -281,6 +284,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
       updateProviderState(provider, {
         url: res.url,
         userCode: res.user_code,
+        flow: res.flow,
         state: res.state,
         status: 'waiting',
         polling: true,
@@ -307,7 +311,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
     });
   };
 
-  const submitCallback = async (provider: string) => {
+  const submitCallback = async (provider: string, input?: string) => {
     const attempt = attempts.current.get(provider);
     if (!attempt?.isCurrent()) return;
     if (
@@ -318,7 +322,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
     }
     const rejectInput = (key: string) =>
       updateProviderState(provider, { callbackValidation: t(key) });
-    const callbackInput = (states[provider]?.callbackUrl || '').trim();
+    const callbackInput = (input ?? states[provider]?.callbackUrl ?? '').trim();
     if (!callbackInput) {
       rejectInput(
         provider === 'xai'
@@ -334,8 +338,12 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
         return;
       }
     }
-    const redirectUrl = resolveCallbackUrl(provider, callbackInput, states[provider]?.state);
-    if (!redirectUrl) {
+    const loginState = states[provider]?.state;
+    const callback =
+      states[provider]?.flow === 'code'
+        ? readPastedCode(callbackInput, loginState)
+        : resolveCallbackUrl(provider, callbackInput, loginState);
+    if (!callback) {
       rejectInput(
         provider === 'xai' ? 'auth_login.xai_callback_state_missing' : 'auth_login.missing_state'
       );
@@ -348,13 +356,12 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
       callbackValidation: undefined,
     });
     try {
-      await oauthApi.submitCallback(provider, redirectUrl, attempt.signal);
+      await oauthApi.submitCallback(provider, callback, attempt.signal);
       if (!attempt.isCurrent()) return;
       updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
       notify(provider, t('auth_login.oauth_callback_success'), 'success');
       // The backend only accepts callbacks for pending logins. If a failed status
       // request stopped polling, resume it so the card can report the outcome.
-      const loginState = states[provider]?.state;
       if (loginState && !attempt.isPolling()) {
         updateProviderState(provider, { status: 'waiting', error: undefined, polling: true });
         startPolling(provider, loginState, attempt);
