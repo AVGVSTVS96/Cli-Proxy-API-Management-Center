@@ -1,6 +1,13 @@
 // Accounts: one card per account in its hue, then every account's week on one chart, then the policy.
 
 .deck.accounts {
+  .account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

@@ -1,4 +1,5 @@
 import { Credits } from './Credits';
+import { AddAccount } from './AddAccount';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -29,9 +30,7 @@ export function AccountsPage() {
           <h1>Accounts</h1>
           <p className="lede">{pool?.decision ?? 'Waiting for the pool…'}</p>
         </div>
-        <Link className="btn btn-primary btn-sm" to="/oauth">
-          Add account
-        </Link>
+        <AddAccount />
       </header>
 
       <Credits />

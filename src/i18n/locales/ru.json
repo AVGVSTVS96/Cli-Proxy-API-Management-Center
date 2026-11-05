@@ -840,6 +840,9 @@
     "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии."
   },
   "auth_login": {
+    "add_claude_account": "Добавить аккаунт Claude",
+    "add_chatgpt_account": "Добавить аккаунт ChatGPT",
+    "other_providers": "Другие провайдеры",
     "devin_oauth_cancel": "Отменить вход в Devin",
     "devin_oauth_cancelled": "Вход в Devin отменён.",
     "devin_oauth_cancel_error": "Не удалось отменить вход в Devin:",

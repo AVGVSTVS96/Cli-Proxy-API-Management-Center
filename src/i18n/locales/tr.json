@@ -837,6 +837,9 @@
     "upgrade_required_desc": "Geçerli Sunucu OAuth Model Takma Adları API Değerini Desteklemiyor. En Son CLIProxyAPI (CPA) Sürümüne Yükselt."
   },
   "auth_login": {
+    "add_claude_account": "Claude hesabı ekle",
+    "add_chatgpt_account": "ChatGPT hesabı ekle",
+    "other_providers": "Diğer sağlayıcılar",
     "devin_oauth_cancel": "Devin Girişini İptal Et",
     "devin_oauth_cancelled": "Devin Girişi İptal Edildi.",
     "devin_oauth_cancel_error": "Devin Girişi İptal Edilemedi:",

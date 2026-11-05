@@ -793,6 +793,9 @@
     "remove_mapping": "Xóa ánh xạ bí danh {{number}}"
   },
   "auth_login": {
+    "add_claude_account": "Thêm tài khoản Claude",
+    "add_chatgpt_account": "Thêm tài khoản ChatGPT",
+    "other_providers": "Nhà cung cấp khác",
     "recommended_provider_section": "Provider đề xuất",
     "recommended_provider_badge": "Provider đề xuất",
     "other_oauth_providers": "Provider OAuth khác",

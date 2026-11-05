@@ -835,6 +835,9 @@
     "upgrade_required_desc": "当前服务器版本不支持 OAuth 模型别名功能，请升级到最新版本的 CPA（CLI Proxy API）后重试。"
   },
   "auth_login": {
+    "add_claude_account": "添加 Claude 账户",
+    "add_chatgpt_account": "添加 ChatGPT 账户",
+    "other_providers": "其他提供商",
     "devin_oauth_cancel": "取消 Devin 登录",
     "devin_oauth_cancelled": "已取消 Devin 登录。",
     "devin_oauth_cancel_error": "取消 Devin 登录失败：",
