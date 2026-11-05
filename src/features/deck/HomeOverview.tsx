@@ -1,48 +1,142 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useNow } from '@/hooks/useNow';
 import { useAccounts, useDeck } from './api';
-import { STANDING, accountHue, elapsedAt, fmt, relativeTime, shortAccount, when } from './format';
-import { useWidth } from './useWidth';
+import { accountHue, elapsedAt, fmt, shortAccount, when } from './format';
 import type { Account, AccountsView } from './types';
 import './deck.scss';
 import './home.scss';
 
-const WEEK = 7 * 86_400_000;
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
+/** Even pace: a week's limit spread over its seven days, in points of the limit. */
+const ALLOWED = 100 / 7;
+/** Recent use decides the pace: an account that only just started taking work has no older history. */
+const RECENT = 6 * HOUR;
 
-const utcDay = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const dayName = new Intl.DateTimeFormat('en', { weekday: 'short' });
+const dayDate = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' });
+const hourOf = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
-/** Where a plan's week is heading if its pace holds: used share over time gone, as in Headroom. */
-function paceOf(a: Account, now: number) {
-  const used = a.week.used;
-  const gone = elapsedAt(a.week, now);
-  const resetsAt = a.week.resetsAt;
+type Points = [at: number, used: number][];
 
-  if (used === null || gone === null || resetsAt === null) return null;
-  const limited = used >= a.week.cutoff;
-  const pace = gone > 0.01 ? used / 100 / gone : 0;
-  const runsOut = !limited && pace > 1 ? resetsAt - WEEK + (WEEK * gone * 100) / used : null;
-
-  return { used, gone, pace, resetsAt, limited, runsOut, atReset: Math.min(100, pace * 100) };
+/** Points of the limit used in [from, to): rises only, so a reset inside the range adds nothing. */
+function usedBetween(points: Points, from: number, to: number) {
+  let sum = 0;
+  for (let i = 1; i < points.length; i++) {
+    const [at, used] = points[i];
+    if (at < from || at >= to) continue;
+    const step = used - points[i - 1][1];
+    if (step > 0) sum += step;
+  }
+  return sum;
 }
 
-type Pace = NonNullable<ReturnType<typeof paceOf>>;
+function valueAt(points: Points, at: number) {
+  let value: number | null = null;
+  for (const [t, used] of points) {
+    if (t > at) break;
+    value = used;
+  }
+  return value;
+}
+
+/** A plan's week: used, where it's heading at its recent rate, and when it ran out or will. */
+function weekOf(a: Account, points: Points, now: number) {
+  const used = a.week.used;
+  const resetsAt = a.week.resetsAt;
+  const gone = elapsedAt(a.week, now);
+  if (used === null || resetsAt === null || gone === null) return null;
+
+  const start = resetsAt - WEEK;
+  // A drop is a reset (a plan change or a held reset spent); pace only counts what came after.
+  const reset = points.reduce((t, [at, v], i) => (i && v < points[i - 1][1] - 0.5 ? at : t), 0);
+  const since = Math.max(start, now - RECENT, points[0]?.[0] ?? now, reset);
+  const hours = (now - since) / HOUR;
+  const rate =
+    hours >= 1 ? usedBetween(points, since, now + 1) / hours : gone > 0 ? used / (gone * 168) : 0;
+  const limited = used >= a.week.cutoff;
+  const left = Math.max(0, (resetsAt - now) / HOUR);
+  const atReset = Math.min(100, used + rate * left);
+  const runsOut =
+    !limited && rate > 0 && atReset >= 100 ? now + ((100 - used) / rate) * HOUR : null;
+  const ranOut = limited
+    ? (points.find(([t, v]) => t >= start && v >= a.week.cutoff)?.[0] ?? null)
+    : null;
+
+  return {
+    used,
+    resetsAt,
+    start,
+    limited,
+    runsOut,
+    ranOut,
+    atReset,
+    pace: rate / (100 / 168),
+    evenNow: gone * 100,
+  };
+}
+
+type Week = NonNullable<ReturnType<typeof weekOf>>;
+type Plan = { a: Account; w: Week; points: Points; hue: string };
+
+/** The seven days of a plan's current week: used per day, or the recent pace for days ahead. */
+function daysOf({ a, w, points }: Plan, now: number) {
+  const rate = w.limited ? 0 : w.pace * ALLOWED;
+  let budget = 100 - w.used;
+  return Array.from({ length: 7 }, (_, i) => {
+    const from = w.start + i * DAY;
+    const to = from + DAY;
+    const ahead = from > now;
+    const atStart = valueAt(points, from) ?? 0;
+    const locked = w.ranOut !== null && from >= w.ranOut;
+    const ranOut = w.ranOut !== null && w.ranOut >= from && w.ranOut < to;
+    let forecast = 0;
+    if (!w.limited && to > now) {
+      const share = ahead ? 1 : (to - now) / DAY;
+      forecast = Math.min(budget, rate * share);
+      budget -= forecast;
+    }
+    return {
+      from,
+      used: ahead ? 0 : usedBetween(points, from, Math.min(to, now + 1)),
+      forecast,
+      locked: locked || (atStart >= a.week.cutoff && !ahead),
+      ranOut,
+      today: from <= now && now < to,
+    };
+  });
+}
 
 export function HomeOverview() {
   const { accounts, pool } = useAccounts();
   const view = useDeck<AccountsView>('/accounts', 'accounts');
   const now = useNow();
-  const ids = accounts.map((a) => a.id);
-  const plans = accounts.filter((a) => !a.credit);
-  const next = accounts.find((a) => a.id === pool?.next);
-  const paced = plans
-    .map((a) => ({ a, p: paceOf(a, now) }))
-    .filter((x): x is { a: Account; p: Pace } => x.p !== null)
+
+  // One hue per login: an API key wears the colour of the login whose credit it spends.
+  const logins = accounts.filter((a) => !a.credit).map((a) => a.id);
+  const hueOf = (a: Account) => accountHue(a.credit?.account ?? a.id, logins);
+  const history = (id: string): Points =>
+    (view.data?.history.find((h) => h.account === id && h.kind === 'week')?.points ?? []) as Points;
+
+  const plans: Plan[] = accounts
+    .filter((a) => !a.credit)
+    .flatMap((a) => {
+      const points = history(a.id);
+      const w = weekOf(a, points, now);
+      return w ? [{ a, w, points, hue: hueOf(a) }] : [];
+    })
     .sort(
       (x, y) =>
-        Number(x.p.limited) - Number(y.p.limited) ||
-        (x.p.limited ? x.p.resetsAt - y.p.resetsAt : y.p.pace - x.p.pace)
+        Number(x.w.limited) - Number(y.w.limited) ||
+        (x.w.limited ? x.w.resetsAt - y.w.resetsAt : y.w.pace - x.w.pace)
     );
-  const limited = paced.filter((x) => x.p.limited).sort((x, y) => x.p.resetsAt - y.p.resetsAt);
+  const next = accounts.find((a) => a.id === pool?.next);
+  const open = plans.filter((p) => !p.w.limited);
+  const locked = plans.filter((p) => p.w.limited);
+  const credit = accounts
+    .filter((a) => a.credit && now < a.credit.expiresAt)
+    .reduce((n, a) => n + Math.max(0, a.credit!.remaining), 0);
 
   if (!accounts.length) return null;
 
@@ -52,132 +146,106 @@ export function HomeOverview() {
         <h1>
           {next ? (
             <>
-              New work runs on{' '}
-              <span data-c={accountHue(next.id, ids)}>{shortAccount(next.label)}</span>.
+              New work runs on <span data-c={hueOf(next)}>{shortAccount(next.label)}</span>.
             </>
           ) : (
             'No account can take new work.'
           )}
         </h1>
         <p className="home-sub">
-          {next && <>{nextLine(next, now)} </>}
-          {limited.length > 0 &&
-            `${limited.length} of ${plans.length} plans are at their weekly cutoff; ${shortAccount(
-              limited[0].a.label
-            )} is back ${when(limited[0].p.resetsAt)}.`}
+          {open.length} of {plans.length} plans have room
+          {credit > 0 && `, plus ${fmt.usd(credit)} of API credit`}.
+          {locked.length > 0 &&
+            ` ${shortAccount(locked[0].a.label)} is back ${when(locked[0].w.resetsAt)}.`}
         </p>
       </header>
 
-      <Pools accounts={accounts} ids={ids} now={now} />
+      <Pools accounts={accounts} plans={plans} hueOf={hueOf} now={now} />
 
-      {paced.length > 0 && (
-        <Pace
-          paced={paced}
-          ids={ids}
-          view={view.data}
-          now={now}
-          cutoff={pool?.policy.weeklyCutoff}
-        />
-      )}
+      {plans.length > 0 && <Weeks plans={plans} now={now} />}
 
-      <Ledger accounts={accounts} ids={ids} next={pool?.next ?? null} now={now} />
+      {plans.length > 0 && <Timeline plans={plans} now={now} />}
+
+      {plans.length > 0 && view.data && <Activity plans={plans} now={now} />}
     </div>
   );
 }
 
-function nextLine(a: Account, now: number) {
-  if (a.credit)
-    return `API credit, ${fmt.usd(a.credit.remaining)} left of ${fmt.usd(a.credit.allowance)}.`;
-  const gone = elapsedAt(a.week, now);
-  const used =
-    a.week.used === null ? 'no reading yet' : `${Math.round(a.week.used)}% of its week used`;
-
-  return `${a.plan || 'Claude plan'}, ${used}${gone === null ? '' : `, ${fmt.pct(gone)} of the week gone`}.`;
-}
-
-/** Ben Davis's pool header: what's left across every account, one segment each. */
-function Pools({ accounts, ids, now }: { accounts: Account[]; ids: string[]; now: number }) {
-  const plans = accounts.filter((a) => !a.credit);
-  const weekly = plans.filter((a) => a.week.used !== null);
-  const fiveHour = plans.filter((a) => a.fiveHour.used !== null);
-  const grants = accounts.flatMap((a) => (a.credit && now < a.credit.expiresAt ? [a] : []));
-  const cloud = plans.flatMap((a) =>
-    a.cloud && a.cloud.limit && (a.cloud.expiresAt === null || now < a.cloud.expiresAt) ? [a] : []
-  );
-  const nextReset = weekly
-    .map((a) => a.week.resetsAt)
-    .filter((t): t is number => t !== null)
-    .sort((x, y) => x - y)[0];
-  const nextFive = fiveHour
-    .filter((a) => a.fiveHour.used! > 0)
-    .map((a) => a.fiveHour.resetsAt)
-    .filter((t): t is number => t !== null)
-    .sort((x, y) => x - y)[0];
+/** Ben Davis's pool header: what's left, one bar segment per account. */
+function Pools({
+  accounts,
+  plans,
+  hueOf,
+  now,
+}: {
+  accounts: Account[];
+  plans: Plan[];
+  hueOf: (a: Account) => string;
+  now: number;
+}) {
+  const grants = accounts.filter((a) => a.credit && now < a.credit.expiresAt);
+  const five = plans.filter((p) => p.a.fiveHour.used !== null && !p.w.limited);
   const renews = grants
     .map((a) => a.credit!.renewsAt)
-    .filter((t) => t > 0)
+    .filter((t) => t > now)
     .sort((x, y) => x - y)[0];
 
   return (
-    <section className="pools" aria-label="What's left in each pool">
-      {weekly.length > 0 && (
+    <section className="pools" aria-label="What's left">
+      <Pool
+        title="Plans this week"
+        value={`${plans.filter((p) => !p.w.limited).length}`}
+        of={`of ${plans.length} have room`}
+        segments={plans.map((p) => ({
+          id: p.a.id,
+          name: shortAccount(p.a.label),
+          hue: p.hue,
+          left: 100 - Math.min(100, p.w.used),
+          text: p.w.limited ? `back ${when(p.w.resetsAt)}` : `${Math.round(100 - p.w.used)}% left`,
+          bad: p.w.limited,
+        }))}
+      />
+      {five.length > 0 && (
         <Pool
-          title="Plans · this week"
-          value={`${Math.round(weekly.reduce((n, a) => n + 100 - Math.min(100, a.week.used!), 0))}%`}
-          of={`left of ${weekly.length * 100}%`}
-          segments={weekly.map((a) => ({
-            id: a.id,
-            name: shortAccount(a.label),
-            hue: accountHue(a.id, ids),
-            left: 100 - Math.min(100, a.week.used!),
-            text: `${Math.round(100 - Math.min(100, a.week.used!))}%`,
+          title="Five hours"
+          value={`${Math.round(100 - Math.min(100, five[0].a.fiveHour.used!))}%`}
+          of={`left on ${shortAccount(five[0].a.label)}`}
+          segments={five.map((p) => ({
+            id: p.a.id,
+            name: shortAccount(p.a.label),
+            hue: p.hue,
+            left: 100 - Math.min(100, p.a.fiveHour.used!),
+            text: p.a.fiveHour.resetsAt ? `resets ${when(p.a.fiveHour.resetsAt)}` : '',
+            bad: p.a.fiveHour.used! >= p.a.fiveHour.cutoff,
           }))}
-          foot={nextReset ? `Next reset ${when(nextReset)}` : 'No reset time yet'}
-        />
-      )}
-      {fiveHour.length > 0 && (
-        <Pool
-          title="Plans · five hours"
-          value={`${Math.round(fiveHour.reduce((n, a) => n + 100 - Math.min(100, a.fiveHour.used!), 0))}%`}
-          of={`left of ${fiveHour.length * 100}%`}
-          segments={fiveHour.map((a) => ({
-            id: a.id,
-            name: shortAccount(a.label),
-            hue: accountHue(a.id, ids),
-            left: 100 - Math.min(100, a.fiveHour.used!),
-            text: `${Math.round(100 - Math.min(100, a.fiveHour.used!))}%`,
-          }))}
-          foot={nextFive ? `Next reset ${when(nextFive)}` : undefined}
         />
       )}
       {grants.length > 0 && (
         <Pool
           title="API credit"
           value={fmt.usd(grants.reduce((n, a) => n + Math.max(0, a.credit!.remaining), 0))}
-          of={`left of ${fmt.usd(grants.reduce((n, a) => n + a.credit!.allowance, 0))}`}
+          of={`of ${fmt.usd(grants.reduce((n, a) => n + a.credit!.allowance, 0))}`}
           segments={grants.map((a) => ({
             id: a.id,
             name: shortAccount(a.label).replace(/ API$/, ''),
-            hue: accountHue(a.id, ids),
+            hue: hueOf(a),
             left: (Math.max(0, a.credit!.remaining) / a.credit!.allowance) * 100,
-            text: fmt.usd(Math.max(0, a.credit!.remaining)),
+            text: a.credit!.remaining < 1 ? 'empty' : fmt.usd(a.credit!.remaining),
+            bad: a.credit!.remaining < 1,
           }))}
-          foot={renews ? `Next grant ${utcDay.format(renews)}` : undefined}
-        />
-      )}
-      {cloud.length > 0 && (
-        <Pool
-          title="Cloud credit"
-          value={fmt.usd(cloud.reduce((n, a) => n + (a.cloud!.remaining ?? 0), 0))}
-          of={`left of ${fmt.usd(cloud.reduce((n, a) => n + (a.cloud!.limit ?? 0), 0))}`}
-          segments={cloud.map((a) => ({
-            id: a.id,
-            name: shortAccount(a.label),
-            hue: accountHue(a.id, ids),
-            left: ((a.cloud!.remaining ?? 0) / a.cloud!.limit!) * 100,
-            text: fmt.usd(a.cloud!.remaining ?? 0),
-          }))}
-          foot="claude --cloud only"
+          foot={
+            <>
+              Estimate; the exact balance is in{' '}
+              <a
+                href="https://platform.claude.com/settings/billing"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Console ↗
+              </a>
+              {renews && ` · next grant ${dayDate.format(renews)}`}
+            </>
+          }
         />
       )}
     </section>
@@ -194,8 +262,8 @@ function Pool({
   title: string;
   value: string;
   of: string;
-  segments: { id: string; name: string; hue: string; left: number; text: string }[];
-  foot?: string;
+  segments: { id: string; name: string; hue: string; left: number; text: string; bad: boolean }[];
+  foot?: React.ReactNode;
 }) {
   return (
     <article className="pool">
@@ -212,10 +280,10 @@ function Pool({
       </div>
       <ul className="pool-keys">
         {segments.map((s) => (
-          <li key={s.id} data-c={s.hue}>
+          <li key={s.id}>
             <i className="swatch" data-c={s.hue} aria-hidden />
             <span className="clip">{s.name}</span>
-            <b className="num">{s.text}</b>
+            <b className={s.bad ? 'num bad' : 'num'}>{s.text}</b>
           </li>
         ))}
       </ul>
@@ -224,311 +292,408 @@ function Pool({
   );
 }
 
-const PAD = { top: 26, right: 18, bottom: 28, left: 40 };
-const HEIGHT = 300;
-
-/** Headroom's pace view: each plan's week from window start to reset, against even pace. */
-function Pace({
-  paced,
-  ids,
-  view,
-  now,
-  cutoff = 100,
-}: {
-  paced: { a: Account; p: Pace }[];
-  ids: string[];
-  view: AccountsView | null;
-  now: number;
-  cutoff?: number;
-}) {
-  const [ref, width] = useWidth<HTMLDivElement>();
-  const plotW = Math.max(0, width - PAD.left - PAD.right);
-  const plotH = HEIGHT - PAD.top - PAD.bottom;
-  const x = (f: number) => PAD.left + Math.max(0, Math.min(1, f)) * plotW;
-  const y = (v: number) => PAD.top + plotH * (1 - Math.max(0, Math.min(100, v)) / 100);
-  const lead = paced.find((x) => !x.p.limited) ?? paced[0];
-  const name = (a: Account) => shortAccount(a.label);
-
-  const title = lead.p.limited
-    ? `Every plan is at its weekly cutoff`
-    : lead.p.used < 1
-      ? `${name(lead.a)} has its full week left`
-      : Math.abs(lead.p.pace - 1) < 0.05
-        ? `${name(lead.a)} is right on even pace`
-        : `${name(lead.a)} is ${lead.p.pace.toFixed(1)}× even pace`;
-  const early = lead.p.runsOut ? Math.round((lead.p.resetsAt - lead.p.runsOut) / 3_600_000) : 0;
-  const sub = lead.p.limited
-    ? `First back: ${name(lead.a)}, ${when(lead.p.resetsAt)}.`
-    : lead.p.used < 1
-      ? `Its week resets ${when(lead.p.resetsAt)}.`
-      : early >= 1
-        ? `Runs out ${when(lead.p.runsOut!)} if the pace holds, ${early} h before its reset.`
-        : `On pace to end its week near ${Math.round(lead.p.atReset)}%.`;
+/** Headroom's weekly comparison: each plan's week as seven day bars against even pace. */
+function Weeks({ plans, now }: { plans: Plan[]; now: number }) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const plan = plans.find((p) => p.a.id === picked) ?? plans.find((p) => !p.w.limited) ?? plans[0];
+  const early = plans.filter((p) => p.w.ranOut !== null);
+  const title = early.length
+    ? `${early.length} of ${plans.length} plans ran out before their reset`
+    : `Every plan is on pace this week`;
+  const sub = early
+    .map(
+      (p) =>
+        `${shortAccount(p.a.label)} ${dayName.format(p.w.ranOut!)} ${when(p.w.ranOut!).replace(/^\w+ /, '')}`
+    )
+    .join(', ');
 
   return (
-    <section className="section pace" aria-labelledby="pace-title">
-      <div className="pace-head">
-        <h2 id="pace-title">{title}</h2>
-        <p className="muted">{sub}</p>
-      </div>
-      <div className="pace-body">
-        <div className="pace-chart" ref={ref}>
-          {width > 0 && (
-            <svg
-              width={width}
-              height={HEIGHT}
-              role="img"
-              aria-label="Each plan's weekly use against even pace"
+    <section className="panel weeks" aria-labelledby="weeks-title">
+      <header className="panel-head">
+        <h2 id="weeks-title">{title}</h2>
+        {sub && <p>Ran out: {sub}.</p>}
+      </header>
+      <div className="weeks-body">
+        <div className="weeks-grid" role="table" aria-label="This week by day, per plan">
+          <div className="weeks-row weeks-labels" role="row">
+            <span role="columnheader">Plan</span>
+            <span role="columnheader">This week, by day</span>
+            <span role="columnheader">Pace</span>
+            <span role="columnheader">Outlook</span>
+          </div>
+          {plans.map((p) => (
+            <button
+              key={p.a.id}
+              type="button"
+              role="row"
+              className={p === plan ? 'weeks-row picked' : 'weeks-row'}
+              onClick={() => setPicked(p.a.id)}
+              data-c={p.hue}
             >
-              <defs>
-                <pattern
-                  id="pace-hatch"
-                  width="6"
-                  height="6"
-                  patternUnits="userSpaceOnUse"
-                  patternTransform="rotate(45)"
-                >
-                  <line x1="0" y1="0" x2="0" y2="6" className="hatch" />
-                </pattern>
-              </defs>
-              {[0, 25, 50, 75, 100].map((v) => (
-                <g key={v}>
-                  <line className="grid" x1={PAD.left} x2={PAD.left + plotW} y1={y(v)} y2={y(v)} />
-                  <text className="axis" x={PAD.left - 8} y={y(v) + 4} textAnchor="end">
-                    {v}%
-                  </text>
-                </g>
-              ))}
-              {(['Window start', '¼', '½', '¾', 'Reset'] as const).map((label, i) =>
-                plotW < 420 && i % 2 ? null : (
-                  <text
-                    key={label}
-                    className="axis"
-                    x={x(i / 4)}
-                    y={HEIGHT - 8}
-                    textAnchor={i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}
-                  >
-                    {label}
-                  </text>
-                )
-              )}
-              <line className="even" x1={x(0)} y1={y(0)} x2={x(1)} y2={y(100)} />
-              <text className="even-label" x={x(0.86)} y={y(86) - 8} textAnchor="middle">
-                Even pace
-              </text>
-              {cutoff < 100 && (
-                <line className="cut" x1={x(0)} x2={x(1)} y1={y(cutoff)} y2={y(cutoff)} />
-              )}
-              {paced.map(({ a, p }) => {
-                const start = p.resetsAt - WEEK;
-                const points =
-                  (view?.history ?? [])
-                    .find((h) => h.account === a.id && h.kind === 'week')
-                    ?.points.filter(([at]) => at >= start && at <= now)
-                    .map(([at, used]) => [(at - start) / WEEK, used] as const) ?? [];
-                const line = [[0, 0] as const, ...points, [p.gone, p.used] as const];
-                const lockFrom = p.limited ? p.gone : p.runsOut ? (p.runsOut - start) / WEEK : null;
-                return (
-                  <g key={a.id} data-c={accountHue(a.id, ids)}>
-                    {lockFrom !== null && (
-                      <rect
-                        className="locked"
-                        x={x(lockFrom)}
-                        y={y(100) - 6}
-                        width={Math.max(0, x(1) - x(lockFrom))}
-                        height={6}
-                        fill="url(#pace-hatch)"
-                      />
-                    )}
-                    <polyline
-                      className="used"
-                      points={line.map(([f, v]) => `${x(f)},${y(v)}`).join(' ')}
-                    />
-                    {!p.limited && (
-                      <line
-                        className="projected"
-                        x1={x(p.gone)}
-                        y1={y(p.used)}
-                        x2={x(p.runsOut ? (p.runsOut - start) / WEEK : 1)}
-                        y2={y(p.runsOut ? 100 : p.atReset)}
-                      />
-                    )}
-                    {p.runsOut && (
-                      <circle
-                        className="runs-out"
-                        cx={x((p.runsOut - start) / WEEK)}
-                        cy={y(100)}
-                        r={4.5}
-                      />
-                    )}
-                    <circle className="now" cx={x(p.gone)} cy={y(p.used)} r={4} />
-                    {!p.limited && (
-                      <text
-                        className="now-label"
-                        x={x(p.gone) + 8}
-                        y={y(p.used) + (p.used > 92 ? 14 : -8)}
-                      >
-                        {Math.round(p.used)}%
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-          )}
-        </div>
-        <ol className="pace-list" aria-label="Plans, fastest first">
-          {paced.map(({ a, p }) => (
-            <li key={a.id} data-c={accountHue(a.id, ids)}>
-              <i className="swatch" data-c={accountHue(a.id, ids)} aria-hidden />
-              <span className="clip">{name(a)}</span>
-              <b className="num">{p.limited ? '—' : `${p.pace.toFixed(1)}×`}</b>
-              <span className={p.limited || p.runsOut ? 'num bad' : 'num muted'}>
-                {p.limited
-                  ? `back ${when(p.resetsAt)}`
-                  : p.runsOut
-                    ? `runs out ${when(p.runsOut)}`
-                    : `~${Math.round(p.atReset)}% at reset`}
+              <span role="cell" className="weeks-name">
+                <i className="swatch" data-c={p.hue} aria-hidden />
+                <span className="clip">
+                  <b>{shortAccount(p.a.label)}</b>
+                  <span>{p.a.plan}</span>
+                </span>
               </span>
-            </li>
+              <span role="cell">
+                <DayBars plan={p} now={now} />
+              </span>
+              <span role="cell">
+                <span className={p.w.limited ? 'mult bad' : p.w.pace > 1.05 ? 'mult hot' : 'mult'}>
+                  {p.w.limited ? 'Locked' : `${p.w.pace.toFixed(2)}×`}
+                </span>
+              </span>
+              <span role="cell" className="weeks-outlook">
+                <Outlook w={p.w} />
+              </span>
+            </button>
           ))}
-        </ol>
+          <p className="key">
+            <span className="k used-day">Used per day</span>
+            <span className="k even">Even pace, 14.3 points a day</span>
+            <span className="k ahead">Ahead, if the pace holds</span>
+            <span className="k locked">Locked until reset</span>
+            <span className="k out">Ran out</span>
+          </p>
+        </div>
+        <PlanDetail plan={plan} now={now} />
       </div>
-      <p className="pace-key small muted">
-        <span className="k used">Used so far</span>
-        <span className="k projected">If the pace holds</span>
-        <span className="k locked">At the cutoff until reset</span>
-      </p>
     </section>
   );
 }
 
-/** Theo's quota ledger: one row per credential, each window side by side. */
-function Ledger({
-  accounts,
-  ids,
-  next,
-  now,
-}: {
-  accounts: Account[];
-  ids: string[];
-  next: string | null;
-  now: number;
-}) {
+function Outlook({ w }: { w: Week }) {
+  if (w.limited)
+    return (
+      <>
+        <b className="bad">Back {when(w.resetsAt)}</b>
+        <span>at {Math.round(w.used)}%</span>
+      </>
+    );
+  if (w.runsOut)
+    return (
+      <>
+        <b className="bad">Runs out {when(w.runsOut)}</b>
+        <span>{Math.round((w.resetsAt - w.runsOut) / HOUR)} h before reset</span>
+      </>
+    );
   return (
-    <section className="section ledger" aria-labelledby="ledger-title">
-      <div className="section-head">
-        <h2 id="ledger-title">Credentials</h2>
-        <span className="spacer" />
-        <Link to="/accounts" className="small">
-          Accounts →
-        </Link>
-      </div>
-      <div className="ledger-rows" role="table" aria-label="Every credential's limits">
-        <div className="ledger-row ledger-labels" role="row">
-          <span role="columnheader">Credential</span>
-          <span role="columnheader">Week or credit</span>
-          <span role="columnheader">Five hours</span>
-          <span role="columnheader">Working</span>
-          <span role="columnheader">Status</span>
+    <>
+      <b>~{Math.round(w.atReset)}% at reset</b>
+      <span>resets {when(w.resetsAt)}</span>
+    </>
+  );
+}
+
+/** Seven small day bars on the plan's own scale, with even pace dashed across. */
+function DayBars({ plan, now }: { plan: Plan; now: number }) {
+  const days = daysOf(plan, now);
+  const top = Math.max(ALLOWED * 2, ...days.map((d) => d.used + d.forecast));
+  const y = (v: number) => `${(v / top) * 100}%`;
+
+  return (
+    <span className="days" aria-hidden>
+      <i className="even" style={{ bottom: y(ALLOWED) }} />
+      {days.map((d) => (
+        <span key={d.from} className={d.today ? 'day today' : 'day'}>
+          {d.locked && <i className="lock" />}
+          {d.used > 0 && (
+            <i className={d.used > ALLOWED ? 'used over' : 'used'} style={{ height: y(d.used) }} />
+          )}
+          {d.forecast > 0 && (
+            <i className="ahead" style={{ height: y(d.forecast), bottom: y(d.used) }} />
+          )}
+          {d.ranOut && <i className="out" />}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Headroom's account detail: the week in big numbers, then use per day with values on the bars. */
+function PlanDetail({ plan, now }: { plan: Plan; now: number }) {
+  const { a, w } = plan;
+  const days = daysOf(plan, now);
+  const top = Math.max(ALLOWED * 1.6, ...days.map((d) => d.used + d.forecast)) * 1.15;
+  const y = (v: number) => `${(v / top) * 100}%`;
+
+  return (
+    <aside className="detail" data-c={plan.hue}>
+      <header>
+        <i className="swatch" data-c={plan.hue} aria-hidden />
+        <div>
+          <h3>{shortAccount(a.label)}</h3>
+          <p>
+            {a.plan} · 7-day limit · resets {when(w.resetsAt)}
+          </p>
         </div>
-        {accounts.map((a) => {
-          const hue = accountHue(a.id, ids);
-          const read = a.week.sampledAt ?? a.fiveHour.sampledAt;
-          const stale = !a.credit && read !== null && now - read > 25 * 60_000;
+      </header>
+      <dl className="stats">
+        <div>
+          <dt>Used now</dt>
+          <dd className={w.limited ? 'bad' : undefined}>{Math.round(w.used)}%</dd>
+        </div>
+        <div>
+          <dt>Even pace by now</dt>
+          <dd>{Math.round(w.evenNow)}%</dd>
+        </div>
+        <div>
+          <dt>{w.limited ? 'Locked' : w.runsOut ? 'Runs out' : 'At reset'}</dt>
+          <dd className={w.limited || w.runsOut ? 'bad' : undefined}>
+            {w.limited
+              ? `${Math.round((w.resetsAt - now) / HOUR)} h`
+              : w.runsOut
+                ? when(w.runsOut)
+                : `~${Math.round(w.atReset)}%`}
+          </dd>
+        </div>
+      </dl>
+      <h4>
+        Use per day <span>points of its limit</span>
+      </h4>
+      <div className="per-day" aria-label="Use per day">
+        <i className="even" style={{ bottom: y(ALLOWED) }}>
+          <span>{ALLOWED.toFixed(1)}</span>
+        </i>
+        {days.map((d) => (
+          <span key={d.from} className="col">
+            <span className="stack">
+              {d.used + d.forecast > 0.5 && (
+                <em style={{ bottom: y(d.used + d.forecast) }}>
+                  {d.forecast > 0 && d.used < 0.5 ? '~' : ''}
+                  {Math.round(d.used + d.forecast)}
+                </em>
+              )}
+              {d.locked && d.used < 0.5 && <i className="lock" />}
+              {d.used > 0 && (
+                <i
+                  className={d.used > ALLOWED ? 'used over' : 'used'}
+                  style={{ height: y(d.used) }}
+                />
+              )}
+              {d.forecast > 0 && (
+                <i className="ahead" style={{ height: y(d.forecast), bottom: y(d.used) }} />
+              )}
+            </span>
+            <span className={d.today ? 'label today' : 'label'}>{dayName.format(d.from)}</span>
+          </span>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+/** Headroom's timeline: each plan's limit windows on a shared calendar, with now marked. */
+function Timeline({ plans, now }: { plans: Plan[]; now: number }) {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const from = today.getTime() - 6 * DAY;
+  const to = from + 14 * DAY;
+  const x = (t: number) => `${((Math.max(from, Math.min(to, t)) - from) / (to - from)) * 100}%`;
+  const width = (a: number, b: number) =>
+    `${((Math.min(to, b) - Math.max(from, a)) / (to - from)) * 100}%`;
+  const days = Array.from({ length: 14 }, (_, i) => from + i * DAY);
+
+  return (
+    <section className="panel timeline" aria-labelledby="timeline-title">
+      <header className="panel-head">
+        <h2 id="timeline-title">
+          {dayDate.format(from)} – {dayDate.format(to - DAY)}
+        </h2>
+        <p>Weekly windows, two weeks around today.</p>
+      </header>
+      <div className="tl" role="table" aria-label="Weekly windows per plan">
+        <div className="tl-row tl-head" role="row">
+          <span role="columnheader" className="tl-who">
+            Plan
+          </span>
+          <span className="tl-track" role="columnheader">
+            {days.map((d) => (
+              <span key={d} className={d === today.getTime() ? 'tl-day today' : 'tl-day'}>
+                {dayName.format(d)}
+                <b>{new Date(d).getDate()}</b>
+              </span>
+            ))}
+          </span>
+        </div>
+        {plans.map((p) => {
+          const { w, a } = p;
+          const lastStart = w.start - WEEK;
           return (
-            <div
-              key={a.id}
-              className={a.id === next ? 'ledger-row next' : 'ledger-row'}
-              role="row"
-              data-c={hue}
-            >
-              <span role="cell" className="ledger-name">
-                <i className="swatch" data-c={hue} aria-hidden />
-                <span className="clip">
-                  <b title={a.label}>{shortAccount(a.label)}</b>
-                  <span className="muted small">
-                    {a.plan || 'Claude plan'}
-                    {stale && <span className="warn"> · read {relativeTime(read!)}</span>}
-                  </span>
+            <div key={a.id} className="tl-row" role="row" data-c={p.hue}>
+              <span role="cell" className="tl-who">
+                <b>{shortAccount(a.label)}</b>
+                <span className="chips">
+                  <Chip label="Week" value={w.used} cutoff={a.week.cutoff} />
+                  {a.fiveHour.used !== null && (
+                    <Chip label="5 h" value={a.fiveHour.used} cutoff={a.fiveHour.cutoff} />
+                  )}
                 </span>
               </span>
-              <span role="cell">
-                {a.credit ? (
-                  <Bar
-                    share={(Math.max(0, a.credit.remaining) / a.credit.allowance) * 100}
-                    text={`${fmt.usd(Math.max(0, a.credit.remaining))} left`}
-                    foot={`expires ${utcDay.format(a.credit.expiresAt)} UTC`}
-                    bad={a.credit.remaining < 1 || now >= a.credit.expiresAt}
-                    left
-                  />
-                ) : (
-                  <Bar
-                    share={a.week.used}
-                    text={a.week.used === null ? 'no reading' : `${Math.round(a.week.used)}%`}
-                    foot={a.week.resetsAt ? `resets ${when(a.week.resetsAt)}` : ''}
-                    bad={a.week.used !== null && a.week.used >= a.week.cutoff}
-                  />
+              <span role="cell" className="tl-track">
+                {days.map((d) => (
+                  <i key={d} className="tl-grid" style={{ left: x(d) }} />
+                ))}
+                {w.start > from && (p.points[0]?.[0] ?? now) < w.start && (
+                  <span
+                    className="win ended"
+                    style={{ left: x(lastStart), width: width(lastStart, w.start - HOUR * 2) }}
+                  >
+                    Ended {dayDate.format(w.start)}
+                  </span>
                 )}
-              </span>
-              <span role="cell">
-                {a.credit ? null : (
-                  <Bar
-                    share={a.fiveHour.used}
-                    text={
-                      a.fiveHour.used === null ? 'no reading' : `${Math.round(a.fiveHour.used)}%`
-                    }
-                    foot={
-                      a.fiveHour.resetsAt && a.fiveHour.used
-                        ? `resets ${when(a.fiveHour.resetsAt)}`
-                        : ''
-                    }
-                    bad={a.fiveHour.used !== null && a.fiveHour.used >= a.fiveHour.cutoff}
-                  />
-                )}
-              </span>
-              <span role="cell" className="num">
-                {a.working}
-              </span>
-              <span role="cell">
-                <span className={`chip standing ${a.standing}`}>{STANDING[a.standing]}</span>
+                <span
+                  className={w.limited ? 'win now locked' : 'win now'}
+                  style={{ left: x(w.start), width: width(w.start, w.resetsAt - HOUR * 2) }}
+                >
+                  {w.ranOut && (
+                    <i
+                      className="win-lock"
+                      style={{ left: `${((w.ranOut - w.start) / WEEK) * 100}%` }}
+                    />
+                  )}
+                  <span className="win-label">
+                    {w.limited
+                      ? `${Math.round(w.used)}% · locked until ${when(w.resetsAt)}`
+                      : `${Math.round(w.used)}% used · ${when(w.resetsAt)}`}
+                  </span>
+                  <span className="win-bar">
+                    <i style={{ width: `${Math.min(100, w.used)}%` }} />
+                  </span>
+                </span>
+                <span
+                  className="win next"
+                  style={{ left: x(w.resetsAt), width: width(w.resetsAt, to) }}
+                >
+                  Next · {dayDate.format(w.resetsAt + WEEK)}
+                </span>
               </span>
             </div>
           );
         })}
+        <i
+          className="tl-now"
+          style={{ left: `calc(var(--who) + (100% - var(--who)) * ${(now - from) / (to - from)})` }}
+        >
+          <span>Now</span>
+        </i>
       </div>
     </section>
   );
 }
 
-function Bar({
-  share,
-  text,
-  foot,
-  bad,
-  left = false,
-}: {
-  share: number | null;
-  text: string;
-  foot: string;
-  bad: boolean;
-  /** The share is what's left, not what's used. */
-  left?: boolean;
-}) {
+function Chip({ label, value, cutoff }: { label: string; value: number; cutoff: number }) {
+  const tone = value >= cutoff ? 'bad' : value >= cutoff - 20 ? 'warn' : 'ok';
   return (
-    <span className={share === null ? 'bar-cell unread' : 'bar-cell'}>
-      <span className="bar-line">
-        <span className="bar-track" aria-hidden>
-          {share !== null && (
-            <i
-              className={bad ? 'bad' : left ? 'left' : undefined}
-              style={{ width: `${Math.min(100, share)}%` }}
-            />
-          )}
-        </span>
-        <b className={bad ? 'num bad' : 'num'}>{text}</b>
-      </span>
-      {foot && <span className="muted small">{foot}</span>}
+    <span className={`chip-stat ${tone}`}>
+      <i aria-hidden />
+      {label} <b>{Math.round(value)}%</b>
     </span>
+  );
+}
+
+/** Headroom's activity matrix: limit used per hour across every plan, over the last seven days. */
+function Activity({ plans, now }: { plans: Plan[]; now: number }) {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const days = Array.from({ length: 7 }, (_, i) => today.getTime() - (6 - i) * DAY);
+  const cells = days.map((d) =>
+    Array.from({ length: 24 }, (_, h) => {
+      const from = d + h * HOUR;
+      const to = from + HOUR;
+      return {
+        from,
+        future: from > now,
+        used: plans.reduce((n, p) => n + usedBetween(p.points, from, to), 0),
+        out: plans.filter((p) => {
+          const before = valueAt(p.points, from - 1) ?? 0;
+          return (
+            before < p.a.week.cutoff &&
+            p.points.some(([t, v]) => t >= from && t < to && v >= p.a.week.cutoff)
+          );
+        }),
+      };
+    })
+  );
+  const lockedOn = days.map(
+    (d) =>
+      plans.filter((p) => (valueAt(p.points, Math.min(now, d + DAY - 1)) ?? 0) >= p.a.week.cutoff)
+        .length
+  );
+  const byHour = Array.from({ length: 24 }, (_, h) => cells.reduce((n, row) => n + row[h].used, 0));
+  let busiest = 0;
+  for (let h = 0; h < 22; h++)
+    if (
+      byHour[h] + byHour[h + 1] + byHour[h + 2] >
+      byHour[busiest] + byHour[busiest + 1] + byHour[busiest + 2]
+    )
+      busiest = h;
+  const runOuts = cells.flat().reduce((n, c) => n + c.out.length, 0);
+  const level = (v: number) => (v <= 0 ? 0 : v < 1 ? 1 : v < 3 ? 2 : v < 6 ? 3 : 4);
+
+  return (
+    <section className="panel activity" aria-labelledby="activity-title">
+      <header className="panel-head">
+        <h2 id="activity-title">
+          Busiest {hourOf(busiest)}–{hourOf(busiest + 3)}
+        </h2>
+        <p>
+          {runOuts} run-out{runOuts === 1 ? '' : 's'} in 7 days, across {plans.length} plans.
+        </p>
+      </header>
+      <div className="matrix" role="img" aria-label="Weekly limit used per hour, last 7 days">
+        <span />
+        {Array.from({ length: 24 }, (_, h) => (
+          <span key={h} className="m-hour">
+            {h % 6 === 0 ? hourOf(h) : ''}
+          </span>
+        ))}
+        <span className="m-hour">Locked</span>
+        {cells.map((row, i) => (
+          <div key={days[i]} className="m-row">
+            <span className="m-day">
+              {dayName.format(days[i])} <b>{new Date(days[i]).getDate()}</b>
+            </span>
+            {row.map((c) => (
+              <span
+                key={c.from}
+                className={c.future ? 'cell future' : `cell l${level(c.used)}`}
+                title={
+                  c.future
+                    ? undefined
+                    : `${dayName.format(c.from)} ${hourOf(new Date(c.from).getHours())}: ${fmt.pts(c.used)} points${
+                        c.out.length
+                          ? `, ${c.out.map((p) => shortAccount(p.a.label)).join(', ')} ran out`
+                          : ''
+                      }`
+                }
+              >
+                {c.out.length > 0 && <i className="out" />}
+              </span>
+            ))}
+            <span
+              className="m-lock"
+              style={{ opacity: lockedOn[i] ? 0.35 + (0.65 * lockedOn[i]) / plans.length : 1 }}
+            >
+              {lockedOn[i] > 0 && <b>{lockedOn[i]}</b>}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="key">
+        <span className="k-cells">
+          Points used per hour
+          <i className="cell l1" />
+          <i className="cell l2" />
+          <i className="cell l3" />
+          <i className="cell l4" />
+          under 1, 3, 6, more
+        </span>
+        <span className="k out">Ran out</span>
+        <span className="k locked">Plans locked that day</span>
+      </p>
+    </section>
   );
 }

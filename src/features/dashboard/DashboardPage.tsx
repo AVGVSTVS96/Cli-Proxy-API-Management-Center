@@ -1,328 +1,44 @@
-import { HomeOverview } from '@/features/deck/HomeOverview';
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores';
+import { HomeOverview } from '@/features/deck/HomeOverview';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { formatCompactNumber, formatDateValue, formatPercent } from '@/utils/format';
 import { useDashboardOverview } from './hooks/useDashboardOverview';
-import { LiveWire } from './components/LiveWire';
-import { Meter } from './components/Meter';
 import { ThroughputChart } from './components/ThroughputChart';
-import { useCountUp, useRevealGroup, useRevealOnScroll } from '@/hooks/motion';
-import { splitWindowMinutes, toneForSuccessRate, type MeterTone } from './utils';
+import { splitWindowMinutes } from './utils';
 import styles from './dashboard.module.scss';
 
-const DASH = '—';
-
-/** KPI 卡左上角色签：有语义色调的卡用状态色，其余保持中性 */
-const TILE_ACCENTS: Record<MeterTone, string> = {
-  good: 'var(--viz-success)',
-  warning: 'var(--amber-color)',
-  critical: 'var(--viz-failure)',
-  idle: 'var(--text-quaternary)',
-};
-
-/** 大数字：六位以内用千分位，再往上压缩，避免撑破排版 */
-const formatHeadline = (value: number): string =>
-  value < 100_000 ? value.toLocaleString() : formatCompactNumber(value);
-
 export function DashboardPage() {
-  const { t, i18n } = useTranslation();
-  const serverVersion = useAuthStore((state) => state.serverVersion);
-  const serverBuildDate = useAuthStore((state) => state.serverBuildDate);
-
-  const { connectionStatus, connected, config, counts, traffic, credentials, refresh } =
-    useDashboardOverview();
+  const { t } = useTranslation();
+  const { connected, traffic, refresh } = useDashboardOverview();
 
   useHeaderRefresh(refresh, connected);
 
-  /* Hero 与静态网格走分组级联；异步内容区（图表/供应商）保持整块 reveal */
-  const heroRef = useRevealGroup<HTMLElement>();
-  const statsRef = useRevealGroup<HTMLElement>(0.12);
-  const trafficRef = useRevealOnScroll<HTMLElement>();
-  const detailRef = useRevealGroup<HTMLElement>();
-
-  const animatedTotal = useCountUp(traffic.total, connected);
-
   const windowLabel = useMemo(() => {
-    if (traffic.windowMinutes <= 0) return DASH;
+    if (traffic.windowMinutes <= 0) return '';
     const { hours, minutes } = splitWindowMinutes(traffic.windowMinutes);
     if (hours === 0) return t('dashboard.window_m', { minutes });
     if (minutes === 0) return t('dashboard.window_h', { hours });
     return t('dashboard.window_hm', { hours, minutes });
   }, [traffic.windowMinutes, t]);
 
-  const heroSparkPoints = useMemo(
-    () => traffic.buckets.map((bucket) => bucket.success + bucket.failed),
-    [traffic.buckets]
-  );
-
-  const routingStrategy = useMemo(() => {
-    const raw = config?.routingStrategy?.trim() ?? '';
-    if (!raw) return DASH;
-    if (raw === 'round-robin') return t('basic_settings.routing_strategy_round_robin');
-    if (raw === 'weighted-round-robin') {
-      return t('basic_settings.routing_strategy_weighted_round_robin');
-    }
-    if (raw === 'fill-first') return t('basic_settings.routing_strategy_fill_first');
-    return raw;
-  }, [config?.routingStrategy, t]);
-
-  const successRateTone = toneForSuccessRate(traffic.successRate);
-
-  /** 标题是算出来的判词，不是写死的口号；句尾句号充当状态灯 */
-  const verdict = useMemo(() => {
-    if (!connected) {
-      return connectionStatus === 'connecting'
-        ? { key: 'hero_verdict_connecting', accent: 'var(--amber-color)' }
-        : { key: 'hero_verdict_offline', accent: 'var(--text-quaternary)' };
-    }
-    if (traffic.total === 0 || traffic.successRate === null) {
-      return { key: 'hero_verdict_idle', accent: 'var(--text-quaternary)' };
-    }
-    const keyByTone: Record<MeterTone, string> = {
-      good: 'hero_verdict_good',
-      warning: 'hero_verdict_warning',
-      critical: 'hero_verdict_critical',
-      idle: 'hero_verdict_idle',
-    };
-    return { key: keyByTone[successRateTone], accent: TILE_ACCENTS[successRateTone] };
-  }, [connected, connectionStatus, traffic.total, traffic.successRate, successRateTone]);
-
-  /* 句号状态灯只在「有活着的流量」时呼吸；离线/静默时保持安静 */
-  const heroAlive = connected && traffic.total > 0;
-
-  const statTiles = [
-    {
-      key: 'success',
-      label: t('dashboard.success_rate'),
-      value: traffic.successRate === null ? DASH : formatPercent(traffic.successRate),
-      meter: traffic.successRate,
-      tone: successRateTone,
-    },
-    {
-      key: 'credentials',
-      label: t('dashboard.stat_credentials'),
-      value: credentials ? credentials.total.toLocaleString() : DASH,
-      hint: credentials
-        ? t('dashboard.stat_credentials_hint', {
-            active: credentials.active,
-            disabled: credentials.disabled + credentials.unavailable,
-          })
-        : t('dashboard.stat_credentials_empty'),
-      meter:
-        credentials && credentials.total > 0
-          ? (credentials.active / credentials.total) * 100
-          : null,
-      tone: undefined,
-    },
-    {
-      key: 'providerKeys',
-      label: t('dashboard.stat_provider_keys'),
-      value: counts.providerKeys === null ? DASH : counts.providerKeys.toLocaleString(),
-      meter: null,
-      tone: undefined,
-    },
-    {
-      key: 'models',
-      label: t('dashboard.stat_models'),
-      value: counts.models === null ? DASH : counts.models.toLocaleString(),
-      meter: null,
-      tone: undefined,
-    },
-  ];
-
-  const runtimeRows: Array<{ label: string; value: string; mono?: boolean }> = [
-    { label: t('dashboard.runtime_routing'), value: routingStrategy },
-    { label: t('dashboard.runtime_retry'), value: String(config?.requestRetry ?? 0) },
-    {
-      label: t('dashboard.runtime_management_keys'),
-      value: counts.managementKeys === null ? DASH : String(counts.managementKeys),
-    },
-    { label: t('dashboard.runtime_version'), value: serverVersion?.trim() || DASH },
-    {
-      label: t('dashboard.runtime_build'),
-      value: formatDateValue(serverBuildDate, i18n.language) || DASH,
-    },
-    { label: t('dashboard.runtime_proxy'), value: config?.proxyUrl?.trim() || DASH, mono: true },
-  ];
-
-  const runtimeToggles = config
-    ? [
-        { label: t('dashboard.runtime_debug'), on: Boolean(config.debug) },
-        { label: t('dashboard.runtime_file_logging'), on: Boolean(config.loggingToFile) },
-        { label: t('dashboard.runtime_request_log'), on: Boolean(config.requestLog) },
-        { label: t('dashboard.runtime_ws_auth'), on: Boolean(config.wsAuth) },
-        { label: t('dashboard.runtime_model_prefix'), on: Boolean(config.forceModelPrefix) },
-      ]
-    : [];
-
   return (
     <div className={styles.page}>
-      <div className={styles.ambient} aria-hidden="true">
-        <span className={styles.washTop} />
-        <span className={styles.gridWash} />
-      </div>
-
       <HomeOverview />
-
-      {/* ---------- Hero ---------- */}
-      <section className={styles.hero} ref={heroRef}>
-        <div className={styles.heroCopy}>
-          <h1 className={styles.heroTitle} data-reveal>
-            {t(`dashboard.${verdict.key}`)}
-            <span
-              className={`${styles.heroPeriod} ${heroAlive ? styles.heroPeriodLive : ''}`}
-              style={{ color: verdict.accent }}
-            >
-              {t('dashboard.hero_period')}
-            </span>
-          </h1>
-          <div className={styles.heroActions} data-reveal>
-            <Link to="/ai-providers" className={styles.primaryAction}>
-              {t('dashboard.cta_manage_providers')}
-            </Link>
-            <Link to="/logs" className={styles.ghostAction}>
-              {t('dashboard.cta_inspect_logs')}{' '}
-              <span className={styles.linkArrow} aria-hidden="true">
-                →
-              </span>
-            </Link>
-          </div>
+      {traffic.total > 0 && (
+        <div className="deck home">
+          <section className="panel" aria-labelledby="traffic-title">
+            <header className="panel-head">
+              <h2 id="traffic-title">
+                {traffic.totalFailure
+                  ? `${traffic.totalFailure.toLocaleString()} of ${traffic.total.toLocaleString()} proxy requests failed`
+                  : `All ${traffic.total.toLocaleString()} proxy requests went through`}
+              </h2>
+              {windowLabel && <p>Last {windowLabel}, in 10-minute buckets.</p>}
+            </header>
+            <ThroughputChart traffic={traffic} />
+          </section>
         </div>
-
-        <div className={styles.heroPanel} data-reveal="scale">
-          <div className={styles.heroPanelTop}>
-            <span className={styles.heroPanelLabel}>{t('dashboard.hero_requests_label')}</span>
-            {connected && (
-              <span className={styles.liveBadge}>
-                <i className={styles.liveDot} aria-hidden="true" />
-                {t('dashboard.hero_live')}
-              </span>
-            )}
-          </div>
-          <strong className={styles.heroFigure}>
-            {connected ? formatHeadline(animatedTotal) : DASH}
-          </strong>
-          <span className={styles.heroPanelMeta}>
-            {t('dashboard.hero_window_meta', { window: windowLabel })}
-          </span>
-          {traffic.total > 0 && (
-            <div className={styles.ratioBar} aria-hidden="true">
-              {traffic.totalSuccess > 0 && (
-                <span
-                  className={`${styles.ratioSegment} ${styles.splitSuccess}`}
-                  style={{ flexGrow: traffic.totalSuccess }}
-                />
-              )}
-              {traffic.totalFailure > 0 && (
-                <span
-                  className={`${styles.ratioSegment} ${styles.splitFailure}`}
-                  style={{ flexGrow: traffic.totalFailure }}
-                />
-              )}
-            </div>
-          )}
-          <div className={styles.heroSplit}>
-            <span className={styles.heroSplitItem}>
-              <i className={`${styles.splitSwatch} ${styles.splitSuccess}`} aria-hidden="true" />
-              {t('stats.success')}
-              <b>{traffic.totalSuccess.toLocaleString()}</b>
-            </span>
-            <span className={styles.heroSplitItem}>
-              <i className={`${styles.splitSwatch} ${styles.splitFailure}`} aria-hidden="true" />
-              {t('stats.failure')}
-              <b>{traffic.totalFailure.toLocaleString()}</b>
-            </span>
-          </div>
-        </div>
-
-        <div className={styles.heroWire}>
-          <LiveWire
-            points={heroSparkPoints}
-            ariaLabel={t('dashboard.hero_spark_label', { window: windowLabel })}
-          />
-        </div>
-      </section>
-
-      {/* ---------- KPI ---------- */}
-      <section className={styles.statsRow} ref={statsRef} aria-label={t('dashboard.stats_aria')}>
-        {statTiles.map((tile) => (
-          <article
-            key={tile.key}
-            className={styles.statTile}
-            data-reveal
-            style={
-              {
-                '--tile-accent': tile.tone ? TILE_ACCENTS[tile.tone] : 'var(--border-hover)',
-              } as React.CSSProperties
-            }
-          >
-            <span className={styles.statLabel}>{tile.label}</span>
-            <strong className={styles.statValue}>{tile.value}</strong>
-            {tile.meter !== null && tile.meter !== undefined && (
-              <Meter
-                value={tile.meter}
-                tone={tile.tone}
-                ariaLabel={tile.label}
-                className={styles.statMeter}
-              />
-            )}
-            {tile.hint && <span className={styles.statHint}>{tile.hint}</span>}
-          </article>
-        ))}
-      </section>
-
-      {/* ---------- Traffic ---------- */}
-      <section className={styles.section} ref={trafficRef}>
-        <header className={styles.sectionHead}>
-          <span className={styles.eyebrow}>{t('dashboard.traffic_eyebrow')}</span>
-          <h2 className={styles.sectionTitle}>{t('dashboard.traffic_title')}</h2>
-        </header>
-        <div className={styles.panel}>
-          <ThroughputChart traffic={traffic} />
-        </div>
-      </section>
-
-      {/* ---------- Credential health + runtime ---------- */}
-      <section className={styles.detailGrid} ref={detailRef}>
-        <div className={styles.panel} data-reveal>
-          <header className={styles.panelHead}>
-            <span className={styles.eyebrow}>{t('dashboard.runtime_eyebrow')}</span>
-            <h2 className={styles.panelTitle}>{t('dashboard.runtime_title')}</h2>
-          </header>
-          <dl className={styles.specList}>
-            {runtimeRows.map((row) => (
-              <div key={row.label} className={styles.specRow}>
-                <dt className={styles.specLabel}>{row.label}</dt>
-                <dd className={`${styles.specValue} ${row.mono ? styles.specMono : ''}`}>
-                  {row.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          {runtimeToggles.length > 0 && (
-            <ul className={styles.toggleList}>
-              {runtimeToggles.map((toggle) => (
-                <li
-                  key={toggle.label}
-                  className={`${styles.togglePill} ${toggle.on ? styles.toggleOn : styles.toggleOff}`}
-                >
-                  {toggle.label}
-                  <b>{toggle.on ? t('common.yes') : t('common.no')}</b>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link to="/config" className={styles.panelLink}>
-            {t('dashboard.runtime_link')}{' '}
-            <span className={styles.linkArrow} aria-hidden="true">
-              →
-            </span>
-          </Link>
-        </div>
-      </section>
+      )}
     </div>
   );
 }
