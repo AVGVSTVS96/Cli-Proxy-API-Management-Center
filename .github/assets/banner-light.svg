@@ -1,52 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="BROADCOM home: which account takes new work and what is left in each pool">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="BROADCOM home: each plan's week as day bars against even pace">
+<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.6" height="6" fill="#e5484d" fill-opacity="0.55"/></pattern></defs>
 <rect width="1200" height="600" rx="20" fill="#fafafa"/>
-<g transform="translate(64 52)"><rect width="36" height="36" rx="8" fill="#0a0a0a"/><rect x="8" y="9" width="20" height="4.5" rx="1.2" fill="#ff8a1f"/><rect x="8" y="15.75" width="14.5" height="4.5" rx="1.2" fill="#ededed"/><rect x="8" y="22.5" width="9" height="4.5" rx="1.2" fill="#ededed"/><text x="50" y="25" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="0.6" fill="#0a0a0a">BROADCOM</text></g>
-<text x="64" y="178" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="-2.2" fill="#0a0a0a">New work runs on <tspan fill="#e86a00">work</tspan>.</text>
-<text x="64" y="222" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="19" fill="#525252">Max 20x, 12% of its week used. 1 of 4 plans is at its weekly cutoff; spare is back Sat 6:00 PM.</text>
-<rect x="64" y="286" width="1072" height="250" rx="14" fill="#ffffff" stroke="#e6e6e6"/>
-<line x1="421.3333333333333" y1="286" x2="421.3333333333333" y2="536" stroke="#e6e6e6"/>
-<line x1="778.6666666666666" y1="286" x2="778.6666666666666" y2="536" stroke="#e6e6e6"/>
-<text x="88" y="322" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#525252">Plans · this week</text>
-<text x="88" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1" fill="#0a0a0a">212%<tspan dx="8" font-size="14" font-weight="400" letter-spacing="0" fill="#525252">left of 400%</tspan></text>
-<rect x="88" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#e8622c" fill-opacity="0.18"/>
-<rect x="88" y="388" width="65.41333333333333" height="8" rx="1.5" fill="#e8622c"/>
-<rect x="166.33333333333331" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#16a36a" fill-opacity="0.18"/>
-<rect x="166.33333333333331" y="388" width="55.00666666666666" height="8" rx="1.5" fill="#16a36a"/>
-<rect x="244.66666666666666" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#2f6fdb" fill-opacity="0.18"/>
-<rect x="244.66666666666666" y="388" width="37.166666666666664" height="8" rx="1.5" fill="#2f6fdb"/>
-<rect x="323" y="388" width="74.33333333333333" height="8" rx="1.5" fill="#e46ea0" fill-opacity="0.18"/>
-<rect x="88" y="416" width="10" height="10" rx="1.5" fill="#e8622c"/>
-<text x="106" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">work</text>
-<text x="397.3333333333333" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">88%</text>
-<rect x="88" y="436" width="10" height="10" rx="1.5" fill="#16a36a"/>
-<text x="106" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">lab</text>
-<text x="397.3333333333333" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">74%</text>
-<rect x="88" y="456" width="10" height="10" rx="1.5" fill="#2f6fdb"/>
-<text x="106" y="466" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">home</text>
-<text x="397.3333333333333" y="466" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">50%</text>
-<rect x="88" y="476" width="10" height="10" rx="1.5" fill="#e46ea0"/>
-<text x="106" y="486" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">spare</text>
-<text x="397.3333333333333" y="486" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">0%</text>
-<text x="88" y="510" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#8a8a8a">Next reset Sat 6:00 PM</text>
-<text x="445.3333333333333" y="322" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#525252">Plans · five hours</text>
-<text x="445.3333333333333" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1" fill="#0a0a0a">81%<tspan dx="8" font-size="14" font-weight="400" letter-spacing="0" fill="#525252">left of 100%</tspan></text>
-<rect x="445.3333333333333" y="388" width="309.3333333333333" height="8" rx="1.5" fill="#e8622c" fill-opacity="0.18"/>
-<rect x="445.3333333333333" y="388" width="250.56" height="8" rx="1.5" fill="#e8622c"/>
-<rect x="445.3333333333333" y="416" width="10" height="10" rx="1.5" fill="#e8622c"/>
-<text x="463.3333333333333" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">work</text>
-<text x="754.6666666666666" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">81%</text>
-<text x="445.3333333333333" y="510" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#8a8a8a">Next reset 10:20 AM</text>
-<text x="802.6666666666666" y="322" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#525252">API credit</text>
-<text x="802.6666666666666" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="-1" fill="#0a0a0a">$148.20<tspan dx="8" font-size="14" font-weight="400" letter-spacing="0" fill="#525252">left of $300.00</tspan></text>
-<rect x="802.6666666666666" y="388" width="152.66666666666666" height="8" rx="1.5" fill="#16a36a" fill-opacity="0.18"/>
-<rect x="802.6666666666666" y="388" width="97.70666666666666" height="8" rx="1.5" fill="#16a36a"/>
-<rect x="959.3333333333333" y="388" width="152.66666666666666" height="8" rx="1.5" fill="#2f6fdb" fill-opacity="0.18"/>
-<rect x="959.3333333333333" y="388" width="53.43333333333333" height="8" rx="1.5" fill="#2f6fdb"/>
-<rect x="802.6666666666666" y="416" width="10" height="10" rx="1.5" fill="#16a36a"/>
-<text x="820.6666666666666" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">lab</text>
-<text x="1112" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">$96.40</text>
-<rect x="802.6666666666666" y="436" width="10" height="10" rx="1.5" fill="#2f6fdb"/>
-<text x="820.6666666666666" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#525252">home</text>
-<text x="1112" y="446" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" text-anchor="end" fill="#0a0a0a">$51.80</text>
-<text x="802.6666666666666" y="510" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#8a8a8a">Next grant Nov 19</text>
+<g transform="translate(64 44)"><rect width="36" height="36" rx="8" fill="#0a0a0a"/><rect x="8" y="9" width="20" height="4.5" rx="1.2" fill="#ff8a1f"/><rect x="8" y="15.75" width="14.5" height="4.5" rx="1.2" fill="#ededed"/><rect x="8" y="22.5" width="9" height="4.5" rx="1.2" fill="#ededed"/></g>
+<text x="114" y="69" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" fill="#0a0a0a" font-weight="700" letter-spacing="0.6">BROADCOM</text>
+<text x="64" y="140" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="46" fill="#0a0a0a" font-weight="700" letter-spacing="-1.8">New work runs on <tspan fill="#e86a00">work</tspan>.</text>
+<text x="64" y="174" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" fill="#525252" >3 of 4 plans have room. lab is back Thu 6:00 PM.</text>
+<rect x="64" y="200" width="1072" height="384" rx="18" fill="#ffffff" stroke="#e6e6e6"/>
+<text x="96" y="244" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="21" fill="#0a0a0a" font-weight="700" letter-spacing="-0.4">1 of 4 plans ran out before its reset</text>
+<text x="96" y="270" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" fill="#525252" >Ran out: lab Sun 2:25 PM. Bars are points used per day; the dashed line is even pace.</text>
+<text x="323" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#8a8a8a" text-anchor="middle">Thu</text>
+<text x="393" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#8a8a8a" text-anchor="middle">Fri</text>
+<text x="463" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#8a8a8a" text-anchor="middle">Sat</text>
+<text x="533" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#8a8a8a" text-anchor="middle">Sun</text>
+<text x="603" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#0a0a0a" text-anchor="middle" font-weight="700">Mon</text>
+<text x="673" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#8a8a8a" text-anchor="middle">Tue</text>
+<text x="743" y="296" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11.5" fill="#8a8a8a" text-anchor="middle">Wed</text>
+<line x1="96" y1="300" x2="1104" y2="300" stroke="#e6e6e6"/>
+<text x="96" y="334" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" fill="#0a0a0a" font-weight="600">work</text>
+<text x="96" y="353" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#8a8a8a" >Max 20x</text>
+<rect x="300" y="347.2" width="46" height="12.8" rx="3" fill="#9a9a9a"/>
+<rect x="370" y="342.4" width="46" height="17.6" rx="3" fill="#9a9a9a"/>
+<rect x="440" y="339.2" width="46" height="20.8" rx="3" fill="#9a9a9a"/>
+<rect x="510" y="345.6" width="46" height="14.4" rx="3" fill="#9a9a9a"/>
+<rect x="580" y="350.4" width="46" height="9.600000000000001" rx="3" fill="#9a9a9a"/>
+<rect x="650.5" y="344.5" width="45" height="15" rx="3" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<rect x="720.5" y="344.5" width="45" height="15" rx="3" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<line x1="294" y1="337.1428571428571" x2="772" y2="337.1428571428571" stroke="#525252" stroke-dasharray="4 4" stroke-width="1"/>
+<line x1="294" y1="360" x2="772" y2="360" stroke="#e6e6e6"/>
+<rect x="830" y="322" width="61" height="26" rx="7" fill="#ececec" fill-opacity="1"/>
+<text x="860.5" y="340" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#0a0a0a" font-weight="600" text-anchor="middle">0.82×</text>
+<text x="1104" y="340" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" fill="#0a0a0a" text-anchor="end">~67% at reset</text>
+<line x1="96" y1="366" x2="1104" y2="366" stroke="#e6e6e6"/>
+<text x="96" y="400" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" fill="#0a0a0a" font-weight="600">side</text>
+<text x="96" y="419" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#8a8a8a" >Max 5x</text>
+<rect x="300" y="406.8" width="46" height="19.200000000000003" rx="3" fill="#9a9a9a"/>
+<rect x="370" y="400.4" width="46" height="25.6" rx="3" fill="#e8a317"/>
+<rect x="440" y="395.6" width="46" height="30.400000000000002" rx="3" fill="#e8a317"/>
+<rect x="510" y="390.8" width="46" height="35.2" rx="3" fill="#e8a317"/>
+<rect x="580" y="411.6" width="46" height="14.4" rx="3" fill="#9a9a9a"/>
+<rect x="650.5" y="407.3" width="45" height="18.200000000000003" rx="3" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<rect x="720.5" y="410.5" width="45" height="15" rx="3" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<line x1="294" y1="403.1428571428571" x2="772" y2="403.1428571428571" stroke="#525252" stroke-dasharray="4 4" stroke-width="1"/>
+<line x1="294" y1="426" x2="772" y2="426" stroke="#e6e6e6"/>
+<rect x="830" y="388" width="61" height="26" rx="7" fill="#e8a317" fill-opacity="0.28"/>
+<text x="860.5" y="406" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#0a0a0a" font-weight="600" text-anchor="middle">1.46×</text>
+<text x="1104" y="406" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" fill="#0a0a0a" text-anchor="end">Runs out Wed 2 PM</text>
+<line x1="96" y1="432" x2="1104" y2="432" stroke="#e6e6e6"/>
+<text x="96" y="466" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" fill="#0a0a0a" font-weight="600">lab</text>
+<text x="96" y="485" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#8a8a8a" >Max 20x</text>
+<rect x="300" y="463.2" width="46" height="28.8" rx="3" fill="#e8a317"/>
+<rect x="370" y="450.4" width="46" height="41.6" rx="3" fill="#e8a317"/>
+<rect x="440" y="442.4" width="46" height="49.6" rx="3" fill="#e8a317"/>
+<rect x="510" y="452" width="46" height="40" rx="3" fill="#e8a317"/>
+<rect x="552" y="440" width="214" height="52" rx="3" fill="url(#hatch)"/>
+<circle cx="552" cy="440" r="4.5" fill="#e5484d"/>
+<line x1="294" y1="469.1428571428571" x2="772" y2="469.1428571428571" stroke="#525252" stroke-dasharray="4 4" stroke-width="1"/>
+<line x1="294" y1="492" x2="772" y2="492" stroke="#e6e6e6"/>
+<rect x="830" y="454" width="69.6" height="26" rx="7" fill="#e5484d" fill-opacity="0.18"/>
+<text x="864.8" y="472" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#0a0a0a" font-weight="600" text-anchor="middle">Locked</text>
+<text x="1104" y="472" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" fill="#e5484d" text-anchor="end" font-weight="600">Back Thu 6 PM</text>
+<line x1="96" y1="498" x2="1104" y2="498" stroke="#e6e6e6"/>
+<text x="96" y="532" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" fill="#0a0a0a" font-weight="600">spare</text>
+<text x="96" y="551" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12.5" fill="#8a8a8a" >Pro</text>
+<rect x="300" y="553.2" width="46" height="4.800000000000001" rx="3" fill="#9a9a9a"/>
+<rect x="370" y="551.6" width="46" height="6.4" rx="3" fill="#9a9a9a"/>
+<rect x="440" y="554.8" width="46" height="3.2" rx="3" fill="#9a9a9a"/>
+<rect x="510" y="550" width="46" height="8" rx="3" fill="#9a9a9a"/>
+<rect x="580" y="556.4" width="46" height="1.6" rx="3" fill="#9a9a9a"/>
+<rect x="650.5" y="553.7" width="45" height="3.8000000000000007" rx="3" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<rect x="720.5" y="553.7" width="45" height="3.8000000000000007" rx="3" fill="none" stroke="#8a8a8a" stroke-dasharray="3 3"/>
+<line x1="294" y1="535.1428571428571" x2="772" y2="535.1428571428571" stroke="#525252" stroke-dasharray="4 4" stroke-width="1"/>
+<line x1="294" y1="558" x2="772" y2="558" stroke="#e6e6e6"/>
+<rect x="830" y="520" width="61" height="26" rx="7" fill="#ececec" fill-opacity="1"/>
+<text x="860.5" y="538" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" fill="#0a0a0a" font-weight="600" text-anchor="middle">0.31×</text>
+<text x="1104" y="538" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14.5" fill="#0a0a0a" text-anchor="end">~21% at reset</text>
 </svg>

@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.svg">
-  <img src=".github/assets/banner-light.svg" alt="BROADCOM home page: which account takes new work, and what is left in each pool">
+  <img src=".github/assets/banner-light.svg" alt="BROADCOM home page: which plan takes new work, and each plan's week as day bars against even pace">
 </picture>
 
 **BROADCOM** is a dashboard for a pool of Claude and ChatGPT accounts behind [CLIProxyAPI](https://github.com/AVGVSTVS96/CLIProxyAPI). It shows which account takes the next request, what is left on every plan and API credit, and whether each plan will last until it resets.
